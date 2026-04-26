@@ -1,0 +1,56 @@
+{
+  "admin": {
+    "username": "admin",
+    "password_hash": "CHANGE_ME_HASHED_BY_APP_SETUP"
+  },
+  "units": [
+    {"id": 1, "name": "Cục Hậu cần", "code": "CUC-HC", "parent_id": null, "sort_order": 1},
+    {"id": 2, "name": "Kho Khu vực A", "code": "KHO-KVA", "parent_id": 1, "sort_order": 10},
+    {"id": 3, "name": "Kho Khu vực B", "code": "KHO-KVB", "parent_id": 1, "sort_order": 20}
+  ],
+  "provinces": [
+    {"id": 1, "name": "Hà Nội", "code": "HN"},
+    {"id": 2, "name": "Đà Nẵng", "code": "DN"}
+  ],
+  "communes": [
+    {"id": 1, "province_id": 1, "name": "Phường Long Biên", "code": "HN-LB"},
+    {"id": 2, "province_id": 1, "name": "Phường Hoàng Mai", "code": "HN-HM"},
+    {"id": 3, "province_id": 2, "name": "Phường Hải Châu", "code": "DN-HC"}
+  ],
+  "catalog_items": [
+    {"id": 1, "category": "warehouse_type", "name": "Kho vật tư", "code": "VAT-TU"},
+    {"id": 2, "category": "warehouse_type", "name": "Kho nhiên liệu", "code": "NHIEN-LIEU"},
+    {"id": 3, "category": "goods_type", "name": "Hàng tổng hợp", "code": "TONG-HOP"},
+    {"id": 4, "category": "warehouse_quality", "name": "Tốt", "code": "TOT"},
+    {"id": 5, "category": "fire_system_type", "name": "Bình chữa cháy xách tay", "code": "BINH-XT"},
+    {"id": 6, "category": "lightning_protection_type", "name": "Kim thu sét", "code": "KIM-THU-SET"}
+  ],
+  "warehouses": [
+    {
+      "id": 1,
+      "name": "Kho Long Biên 01",
+      "code": "KLB-001",
+      "unit_id": 2,
+      "province_id": 1,
+      "commune_id": 1,
+      "address": "Số 1, Long Biên, Hà Nội",
+      "warehouse_type_id": 1,
+      "goods_type_id": 3,
+      "quality_id": 4,
+      "area": 1200.5,
+      "capacity": 5000,
+      "stock_level": 3200,
+      "fire_status": "Có bình chữa cháy định kỳ kiểm tra",
+      "notes": "Dữ liệu mẫu cho kiểm thử"
+    }
+  ],
+  "camera_systems": [
+    {"id": 1, "name": "Camera Kho Long Biên", "warehouse_id": 1, "unit_id": 2, "camera_count": 12, "monitor_count": 2, "installed_year": 2022, "status": "Hoạt động tốt"}
+  ],
+  "fire_systems": [
+    {"id": 1, "name": "PCCC Kho Long Biên", "warehouse_id": 1, "unit_id": 2, "system_type_id": 5, "lightning_protection_type_id": 6, "equipment_status": "Đủ thiết bị cơ bản"}
+  ],
+  "construction_projects": [
+    {"id": 1, "name": "Sửa chữa mái kho Long Biên", "project_type": "repair", "warehouse_id": 1, "unit_id": 2, "progress": "Đang chuẩn bị", "budget": 250000000, "responsible_unit": "Kho Khu vực A", "start_year": 2026, "end_year": 2026}
+  ]
+}

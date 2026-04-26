@@ -5,7 +5,17 @@
 - Tên phần mềm: Warehouse Management
 - Loại phần mềm: Web application có cơ sở dữ liệu
 - Mục tiêu: Quản lý nhà kho, hệ thống camera, hệ thống cứu hỏa, công trình xây mới/nâng cấp/sửa chữa và các danh mục cấu hình liên quan.
-- Đối tượng sử dụng: Nhiều người dùng, có phân quyền theo chức năng hoặc theo phân cấp đơn vị.
+- Đối tượng sử dụng: Bản đầu tiên phục vụ 1 máy/1 người dùng duy nhất với tài khoản cố định `admin`.
+
+## 1.1 Phạm vi phiên bản đầu tiên
+
+- Database mặc định là SQLite.
+- Phần mềm đóng gói bằng Inno Setup thành file `.exe`.
+- Installer không tạo sẵn database.
+- Database chỉ được tạo trong setup wizard sau khi người dùng chọn vị trí lưu và xác nhận.
+- Tài khoản ứng dụng duy nhất là `admin`; mật khẩu mặc định là `admin`.
+- Người dùng được đổi mật khẩu, không được đổi username `admin`.
+- Phạm vi vận hành là 1 máy/1 người dùng duy nhất; không thiết kế cho nhiều máy cùng ghi dữ liệu đồng thời trong LAN ở bản đầu tiên.
 
 ## 2. Phạm vi hệ thống
 
@@ -17,7 +27,7 @@ Hệ thống gồm các phân hệ chính:
 4. Quản lý hệ thống camera an ninh
 5. Quản lý công trình xây mới, nâng cấp, sửa chữa
 6. Cấu hình hệ thống
-7. Quản lý người dùng và phân quyền
+7. Tài khoản admin và đổi mật khẩu
 8. Báo cáo, thống kê, xuất dữ liệu
 
 ## 3. Cấu trúc hệ thống
@@ -27,9 +37,9 @@ Warehouse Management
 ├── Authentication & Authorization
 │   ├── Đăng nhập
 │   ├── Đăng xuất
-│   ├── Quản lý người dùng
-│   ├── Quản lý vai trò
-│   └── Phân quyền theo module / hành động / đơn vị
+│   ├── Tài khoản cố định admin
+│   ├── Đổi mật khẩu admin
+│   └── Bảo vệ route yêu cầu đăng nhập
 │
 ├── Dashboard
 │   ├── Tổng quan số liệu
@@ -156,9 +166,7 @@ Main Layout
 /settings/warehouse-quality-levels
 /settings/fire-protection-types
 /settings/lightning-protection-types
-/settings/users
-/settings/roles
-/settings/permissions
+/settings/change-password
 
 /reports/warehouses
 /reports/camera-systems
@@ -168,54 +176,29 @@ Main Layout
 
 ## 5. Cấu trúc dữ liệu
 
-## 5.1 Nhóm bảng người dùng và phân quyền
+## 5.1 Bảng tài khoản admin
+
+Bản SQLite 1 user chỉ có một tài khoản ứng dụng duy nhất là `admin`. Username này cố định, không cho phép đổi. Mật khẩu mặc định sau setup là `admin`; người dùng được đổi mật khẩu sau khi đăng nhập.
 
 ### users
 
 ```text
 id: uuid, primary key
-username: varchar, unique, not null
+username: varchar, unique, not null, fixed value: admin
 password_hash: varchar, not null
-full_name: varchar, not null
-email: varchar, nullable
-phone: varchar, nullable
-unit_id: uuid, foreign key -> units.id
-role_id: uuid, foreign key -> roles.id
+full_name: varchar, default admin
 is_active: boolean, default true
 last_login_at: timestamp, nullable
 created_at: timestamp
 updated_at: timestamp
 ```
 
-### roles
+Ràng buộc:
 
-```text
-id: uuid, primary key
-name: varchar, not null
-code: varchar, unique, not null
-description: text, nullable
-is_active: boolean, default true
-created_at: timestamp
-updated_at: timestamp
-```
-
-### permissions
-
-```text
-id: uuid, primary key
-module: varchar, not null
-action: varchar, not null
-code: varchar, unique, not null
-description: text, nullable
-```
-
-### role_permissions
-
-```text
-id: uuid, primary key
-role_id: uuid, foreign key -> roles.id
-permission_id: uuid, foreign key -> permissions.id
-```
+- Chỉ có đúng một bản ghi user trong bản đầu tiên.
+- Không có màn hình tạo/xóa user.
+- Không có roles, permissions, role_permissions trong bản đầu tiên.
+- Mọi chức năng sau đăng nhập đều thuộc quyền admin.
 
 ## 5.2 Nhóm bảng cấu hình đơn vị, địa phương
 
@@ -479,9 +462,6 @@ created_at: timestamp
 
 ```text
 units 1 -- n units
-units 1 -- n users
-roles 1 -- n users
-roles n -- n permissions
 provinces 1 -- n communes
 units 1 -- n warehouses
 units 1 -- n camera_systems
@@ -504,22 +484,11 @@ POST /api/auth/logout
 GET  /api/auth/me
 ```
 
-### Users / roles / permissions
+### Admin account
 
 ```text
-GET    /api/users
-POST   /api/users
-GET    /api/users/:id
-PUT    /api/users/:id
-DELETE /api/users/:id
-
-GET    /api/roles
-POST   /api/roles
-GET    /api/roles/:id
-PUT    /api/roles/:id
-DELETE /api/roles/:id
-
-GET    /api/permissions
+GET  /api/admin/profile
+PUT  /api/admin/password
 ```
 
 ### Units
@@ -556,6 +525,8 @@ GET    /api/warehouses/:id
 PUT    /api/warehouses/:id
 DELETE /api/warehouses/:id
 GET    /api/warehouses/export
+GET    /api/warehouses/import-template
+POST   /api/warehouses/import
 ```
 
 ### Camera systems
@@ -567,6 +538,8 @@ GET    /api/camera-systems/:id
 PUT    /api/camera-systems/:id
 DELETE /api/camera-systems/:id
 GET    /api/camera-systems/export
+GET    /api/camera-systems/import-template
+POST   /api/camera-systems/import
 ```
 
 ### Fire protection systems
@@ -578,6 +551,8 @@ GET    /api/fire-protection-systems/:id
 PUT    /api/fire-protection-systems/:id
 DELETE /api/fire-protection-systems/:id
 GET    /api/fire-protection-systems/export
+GET    /api/fire-protection-systems/import-template
+POST   /api/fire-protection-systems/import
 ```
 
 ### Construction projects
@@ -589,6 +564,8 @@ GET    /api/construction-projects/:id
 PUT    /api/construction-projects/:id
 DELETE /api/construction-projects/:id
 GET    /api/construction-projects/export
+GET    /api/construction-projects/import-template
+POST   /api/construction-projects/import
 ```
 
 ### Reports
@@ -601,74 +578,57 @@ GET /api/reports/fire-protection-systems
 GET /api/reports/construction-projects
 ```
 
-## 8. Phân quyền đề xuất
+### Excel import/export
 
-### Nhóm vai trò
+Bản đầu tiên hỗ trợ xuất Excel và import nhanh từ Excel cho các module nghiệp vụ chính.
+
+Yêu cầu import Excel:
+
+- Có API tải file mẫu import cho từng module.
+- File mẫu phải bám theo cấu trúc trường dữ liệu bắt buộc/không bắt buộc của module.
+- Hệ thống phải kiểm tra header/cột bắt buộc.
+- Hệ thống phải kiểm tra kiểu dữ liệu: text, number, integer year, enum/danh mục, tỉnh/xã, đơn vị.
+- Hệ thống phải kiểm tra định dạng dữ liệu và quan hệ phụ thuộc, ví dụ xã phải thuộc tỉnh đã chọn.
+- Nếu dữ liệu sai, không import âm thầm; phải trả danh sách lỗi theo dòng/cột để người dùng sửa.
+- Chỉ ghi dữ liệu hợp lệ sau khi validate thành công theo chính sách import đã chốt.
+
+## 8. Tài khoản và quyền truy cập
+
+Bản đầu tiên không có phân quyền nhiều vai trò. Hệ thống chỉ có một tài khoản ứng dụng duy nhất:
 
 ```text
-ADMIN: toàn quyền hệ thống
-MANAGER: quản lý dữ liệu trong phạm vi đơn vị phụ trách
-UNIT_USER: nhập, sửa dữ liệu trong đơn vị được phân quyền
-VIEWER: chỉ xem và xuất báo cáo
+username: admin
+default password: admin
+role: admin toàn quyền
 ```
 
-### Nhóm quyền
+Quy tắc:
 
-```text
-user:view
-user:create
-user:update
-user:delete
-
-unit:view
-unit:create
-unit:update
-unit:delete
-
-warehouse:view
-warehouse:create
-warehouse:update
-warehouse:delete
-warehouse:export
-
-camera:view
-camera:create
-camera:update
-camera:delete
-camera:export
-
-fire_protection:view
-fire_protection:create
-fire_protection:update
-fire_protection:delete
-fire_protection:export
-
-construction:view
-construction:create
-construction:update
-construction:delete
-construction:export
-
-report:view
-report:export
-```
+- Setup wizard tự tạo tài khoản `admin` với mật khẩu mặc định `admin` sau khi database được người dùng xác nhận tạo.
+- Người dùng được đổi mật khẩu sau khi đăng nhập; nên đổi ngay sau lần đăng nhập đầu tiên.
+- Không cho phép đổi username `admin`.
+- Không cho phép tạo thêm user, role hoặc permission trong bản đầu tiên.
+- Tất cả API nghiệp vụ chỉ yêu cầu đã đăng nhập bằng tài khoản `admin`.
+- Nếu sau này cần nhiều người dùng/phân quyền, sẽ bổ sung schema roles/permissions và migration riêng.
 
 ## 9. Kế hoạch triển khai phần mềm
+
+Đây là kế hoạch tổng quan ở mức đặc tả. Kế hoạch task chi tiết và thứ tự triển khai chính thức nằm tại `docs/implementation-plan.md`. Khi có khác biệt, ưu tiên `docs/implementation-plan.md` cho execution và giữ `docs/spec.md` làm nguồn sự thật về yêu cầu/ràng buộc.
 
 ### Giai đoạn 1: Chuẩn hóa yêu cầu
 
 - Rà soát `mota.md`
 - Thu thập file Excel mẫu cho từng module
 - Chuẩn hóa danh sách trường dữ liệu
-- Xác định vai trò người dùng
-- Xác định quyền theo từng vai trò
+- Xác định cơ chế tài khoản admin duy nhất
+- Xác định luồng đổi mật khẩu admin
 - Xác định mẫu báo cáo cần xuất
 
 Kết quả:
 
 - Tài liệu đặc tả hệ thống
 - Danh sách trường dữ liệu cuối cùng
-- Danh sách vai trò và quyền
+- Quy định tài khoản admin duy nhất
 - Danh sách báo cáo
 
 ### Giai đoạn 2: Thiết kế kỹ thuật
@@ -677,7 +637,7 @@ Kết quả:
 - Thiết kế ERD cơ sở dữ liệu
 - Thiết kế API
 - Thiết kế wireframe giao diện
-- Thiết kế luồng đăng nhập, phân quyền
+- Thiết kế luồng đăng nhập và đổi mật khẩu admin
 
 Kết quả:
 
@@ -690,18 +650,18 @@ Kết quả:
 
 - Khởi tạo frontend
 - Khởi tạo backend
-- Cấu hình database
+- Cấu hình migration/seed scripts; database thật chỉ tạo trong setup wizard
 - Xây dựng đăng nhập / đăng xuất
-- Xây dựng quản lý người dùng
-- Xây dựng quản lý vai trò / quyền
+- Xây dựng tài khoản admin cố định
+- Xây dựng chức năng đổi mật khẩu admin
 - Xây dựng layout chính
 
 Kết quả:
 
 - Người dùng có thể đăng nhập
 - Có sidebar menu
-- Có phân quyền cơ bản
-- Có module quản trị người dùng
+- Có bảo vệ đăng nhập cơ bản
+- Có chức năng đổi mật khẩu admin
 
 ### Giai đoạn 4: Xây dựng module cấu hình
 
@@ -727,6 +687,8 @@ Kết quả:
 - Tìm kiếm, lọc, phân trang
 - Hiển thị theo cấu trúc đơn vị
 - Xuất Excel
+- Tải file mẫu import Excel
+- Import Excel có validate và báo lỗi theo dòng/cột
 
 Kết quả:
 
@@ -741,6 +703,8 @@ Kết quả:
 - Tìm kiếm, lọc, phân trang
 - Quản lý nhu cầu sửa chữa / lắp mới
 - Xuất Excel
+- Tải file mẫu import Excel
+- Import Excel có validate và báo lỗi theo dòng/cột
 
 Kết quả:
 
@@ -755,6 +719,8 @@ Kết quả:
 - Tìm kiếm, lọc, phân trang
 - Liên kết với nhà kho nếu cần
 - Xuất Excel
+- Tải file mẫu import Excel
+- Import Excel có validate và báo lỗi theo dòng/cột
 
 Kết quả:
 
@@ -769,6 +735,8 @@ Kết quả:
 - Quản lý kinh phí
 - Quản lý hồ sơ đính kèm
 - Xuất báo cáo
+- Tải file mẫu import Excel
+- Import Excel có validate và báo lỗi theo dòng/cột
 
 Kết quả:
 
@@ -793,32 +761,36 @@ Kết quả:
 ### Giai đoạn 10: Kiểm thử, triển khai, bàn giao
 
 - Kiểm thử chức năng
-- Kiểm thử phân quyền
+- Kiểm thử đăng nhập admin và đổi mật khẩu
 - Kiểm thử dữ liệu nhập / sửa / xóa
 - Kiểm thử xuất báo cáo
 - Kiểm thử hiệu năng cơ bản
 - Sửa lỗi
+- Đóng gói installer bằng Inno Setup
+- Kiểm thử setup wizard tạo database ở bước cuối
 - Triển khai production
 - Bàn giao tài liệu hướng dẫn sử dụng
 
 Kết quả:
 
 - Phần mềm sẵn sàng sử dụng
+- Có installer `.exe`
+- Có setup wizard để người dùng chọn vị trí database, xác nhận tạo database và hệ thống tự tạo tài khoản `admin/admin`
 - Có tài liệu hướng dẫn
-- Có tài khoản quản trị ban đầu
 
 ## 10. Thứ tự ưu tiên triển khai
 
 ```text
-1. Đăng nhập, người dùng, vai trò, phân quyền
+1. Đăng nhập admin và đổi mật khẩu
 2. Cấu hình đơn vị, địa phương, danh mục
 3. Quản lý nhà kho
 4. Quản lý hệ thống camera
 5. Quản lý hệ thống cứu hỏa
 6. Quản lý công trình
 7. Dashboard
-8. Báo cáo, xuất Excel/PDF
-9. Kiểm thử, tối ưu, triển khai
+8. Báo cáo, xuất Excel/PDF, import Excel
+9. Setup wizard tạo database ở bước cuối
+10. Đóng gói Inno Setup, kiểm thử, tối ưu, triển khai
 ```
 
 ## 11. Nội dung cần bổ sung
@@ -832,5 +804,111 @@ Các nội dung sau cần được bổ sung trước khi triển khai chi tiế
 - Danh sách trường chi tiết của module cứu hỏa
 - Danh sách trường chi tiết của module công trình
 - Mẫu báo cáo đầu ra
-- Quy định phân quyền cụ thể theo từng cấp đơn vị
+- Quy định nếu sau này cần nâng cấp nhiều user/phân quyền
 - Quy định dữ liệu bắt buộc / không bắt buộc cho từng form
+
+## 12. Rà soát spec trước triển khai
+
+Chi tiết rà soát được tách tại `docs/spec-review.md`. Các điểm cần chốt trước khi triển khai mã nguồn chi tiết:
+
+- Stack đã chốt thêm: Ant Design, session cookie, Windows service, PyInstaller.
+- Bộ lệnh phát triển chuẩn: install, dev, build, lint, test, migrate/seed cho môi trường dev-test; installer không tạo database trước setup wizard.
+- File Excel mẫu cho module nhà kho, camera, cứu hỏa và công trình.
+- Danh sách trường bắt buộc/không bắt buộc, kiểu dữ liệu, giới hạn và validation cho từng form.
+- Quy tắc nâng cấp nhiều user/phân quyền nếu phát sinh sau này.
+- Mẫu báo cáo Excel/PDF đầu ra; PDF dùng ReportLab trong bản đầu tiên.
+- Mẫu import Excel cho từng module và quy tắc validate dữ liệu.
+- Upload hồ sơ đính kèm nằm trong bản đầu tiên.
+
+## 13. Kế hoạch triển khai mã nguồn
+
+Kế hoạch triển khai chi tiết được tách tại `docs/implementation-plan.md` để dễ theo dõi và cập nhật trong quá trình phát triển.
+
+## 13.1 Backup và xuất PDF
+
+### Backup
+
+Bản đầu tiên có chức năng backup tự động theo lịch.
+
+Yêu cầu backup:
+
+- Cho phép backup thủ công từ giao diện admin.
+- Cho phép cấu hình backup tự động theo lịch cơ bản, ví dụ hằng ngày hoặc hằng tuần.
+- Cho phép chọn thư mục lưu backup.
+- File backup phải bao gồm database SQLite và thư mục file đính kèm.
+- Restore từ backup phải có xác nhận trước khi ghi đè dữ liệu hiện tại.
+- Export Excel không được xem là backup database.
+
+### Xuất PDF
+
+Bản đầu tiên dùng ReportLab để xuất PDF nhằm tối ưu độ ổn định khi đóng gói Windows/PyInstaller và tránh phụ thuộc native/browser phức tạp.
+
+Yêu cầu PDF:
+
+- PDF dùng cho báo cáo đầu ra chính.
+- Cần đóng gói font hỗ trợ tiếng Việt.
+- Template PDF nên tách riêng để dễ bảo trì.
+- Nếu sau này cần HTML-to-PDF phức tạp, sẽ đánh giá công cụ khác sau.
+
+## 14. Yêu cầu đóng gói và triển khai
+
+Theo yêu cầu hệ thống trong `docs/mota.md`, phần mềm cần có khả năng đóng gói thành bộ cài đặt Windows. Phương án đã chốt cho bản đầu tiên là dùng SQLite và Inno Setup.
+
+Nguyên tắc bắt buộc: installer không được tạo sẵn database trong quá trình build, không được đóng gói kèm một database đã tạo trước và không được tự tạo database nếu người dùng chưa xác nhận ở bước cấu hình cuối. Database chỉ được tạo tại máy người dùng trong bước khởi tạo cuối cùng trước khi phần mềm đi vào hoạt động.
+
+### 14.1 Database SQLite trong bộ cài
+
+SQLite là database mặc định cho bản 1 user/1 máy thao tác chính. Database được lưu dưới dạng file dữ liệu ứng dụng, không cần cài database server riêng.
+
+Bộ cài chỉ được đóng gói:
+
+- Frontend/backend và các runtime cần thiết.
+- Migration scripts.
+- Seed templates hoặc seed scripts cho tài khoản `admin/admin` và danh mục mặc định.
+- Setup wizard dùng để người dùng tự khởi tạo database.
+
+Bộ cài không được đóng gói:
+
+- File database SQLite đã tạo sẵn.
+- Tài khoản admin đã tạo sẵn.
+- Dữ liệu nghiệp vụ mẫu trong database thật nếu người dùng chưa xác nhận.
+
+### 14.2 Bước khởi tạo cuối khi cài đặt
+
+Sau khi cài file chương trình, hệ thống phải mở setup wizard để người dùng thực hiện bước cuối cùng trước khi phần mềm hoạt động.
+
+Setup wizard cần cho phép người dùng:
+
+- Chọn vị trí lưu database file SQLite.
+- Nhập tên database file hoặc dùng tên mặc định như `warehouse.db`.
+- Xem thông tin tài khoản mặc định `admin/admin`.
+- Xác nhận tạo database.
+- Chạy migration tạo schema sau khi người dùng xác nhận.
+- Seed tài khoản `admin/admin` và danh mục mặc định sau khi database được tạo.
+- Hoàn tất cấu hình và chuyển vào màn hình đăng nhập/dashboard.
+
+Lưu ý: SQLite không có database user/password riêng như PostgreSQL. Trong bản đầu tiên, user/password là tài khoản ứng dụng duy nhất `admin/admin`. Setup wizard tự tạo tài khoản này sau khi người dùng xác nhận tạo database. Người dùng được đổi mật khẩu sau khi đăng nhập nhưng không được đổi username `admin`. Nếu sau này yêu cầu mã hóa database file, sẽ bổ sung cơ chế mật khẩu mã hóa riêng và cần chốt kỹ thuật trước.
+
+### 14.3 Installer Windows
+
+Chi tiết phương án đóng gói được mô tả tại `docs/deployment-strategy.md`. Ưu tiên triển khai file `.exe` bằng Inno Setup. Chỉ triển khai `.msi` bằng WiX Toolset nếu sau này có yêu cầu bắt buộc về chuẩn MSI.
+
+Installer chỉ cài chương trình và mở setup wizard. Việc tạo database là bước cuối do người dùng thực hiện trong setup wizard.
+
+## 15. Quyết định database cho bản 1 user
+
+Phạm vi hiện tại đã chốt: hệ thống dùng SQLite làm database mặc định.
+
+SQLite đáp ứng chắc chắn các yêu cầu nghiệp vụ hiện có: dashboard, quản lý nhà kho, camera, cứu hỏa, công trình, cấu hình danh mục, đăng nhập admin, đổi mật khẩu, tìm kiếm/lọc/phân trang, xuất Excel/PDF bằng ReportLab cho PDF, audit log, backup tự động theo lịch và đóng gói installer all-in-one.
+
+Giới hạn chính của SQLite là multi-user đồng thời. Không khuyến nghị dùng một file SQLite đặt trên thư mục mạng để nhiều máy cùng ghi dữ liệu. Nếu sau này cần nhiều người dùng/máy cùng nhập sửa dữ liệu trong LAN hoặc triển khai server tập trung, hệ thống sẽ nâng cấp database sang PostgreSQL.
+
+Yêu cầu kỹ thuật khi dùng SQLite:
+
+- Database file chỉ được tạo trong setup wizard sau khi người dùng chọn vị trí lưu và xác nhận.
+- Database file đặt trong thư mục dữ liệu ứng dụng hoặc vị trí người dùng chọn, không đặt mặc định trong thư mục cài đặt chương trình.
+- Không tạo sẵn database trong source code, build artifact hoặc installer.
+- Bật foreign key cho mọi kết nối SQLite.
+- Dùng transaction cho thao tác tạo/sửa/xóa nghiệp vụ.
+- Dùng Alembic migration để quản lý thay đổi schema.
+- Thiết kế tầng repository/service qua SQLAlchemy để có đường nâng cấp sang PostgreSQL khi cần.

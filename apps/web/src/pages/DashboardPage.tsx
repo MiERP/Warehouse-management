@@ -1,0 +1,5 @@
+import { Card, Col, Row, Statistic, Table } from 'antd';
+import { useEffect, useState } from 'react';
+import { api } from '../api/client';
+import { PageTitle } from '../layouts/AppLayout';
+export function DashboardPage() { const [data, setData] = useState<Record<string, any>>({}); useEffect(() => { api<Record<string, any>>('/api/reports/dashboard').then(setData).catch(() => setData({})); }, []); const stats = [{ k:'warehouses', t:'Nhà kho' }, { k:'camera_systems', t:'Camera' }, { k:'fire_protection_systems', t:'Cứu hỏa' }, { k:'construction_projects', t:'Công trình' }]; return <><PageTitle title="Dashboard" subtitle="Tổng quan vận hành kho, camera, PCCC và công trình" /><Row gutter={[16,16]}>{stats.map((s) => <Col xs={24} sm={12} lg={6} key={s.k}><Card><Statistic title={s.t} value={data[s.k] ?? data[s.k + '_count'] ?? 0} /></Card></Col>)}</Row><Card title="Hoạt động gần đây" style={{ marginTop:16 }}><Table rowKey="id" dataSource={data.recent_items ?? []} columns={[{ title:'Module', dataIndex:'module' }, { title:'Nội dung', dataIndex:'name' }, { title:'Thời gian', dataIndex:'updated_at' }]} pagination={false} /></Card></>; }

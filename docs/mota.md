@@ -3,7 +3,7 @@
 - Dạng phần mềm: Web app có cơ sở dữ liệu.
 
 ## Mô tả chung về phần mềm
-- Hệ thống được xây dựng dạng multi-user; có phân cấp quản lý theo chức năng (hoặc theo phân cấp đơn vị).
+- Bản đầu tiên của hệ thống được xây dựng cho 1 người dùng duy nhất trên 1 máy, dùng tài khoản cố định `admin`; không có phân quyền nhiều người dùng trong bản đầu tiên.
 - Phần mềm quản lý nhà kho, quản lý hệ thống camera, quản lý hệ thống cứu hỏa. Ngoài ra phần mềm còn quản lý các công trình xây dựng mới, nâng cấp, sửa chữa.
 - Phần mềm được bố cục gồm các tab chính: Tab dashboard; tab quản lý nhà kho; tab quản lý hệ thống cứu hỏa, tab quản lý hệ thống camera; tab quản lý các công trình xây mới, nâng cấp; tab cấu hình.
 
@@ -61,3 +61,8 @@ Nhu cầu
 + lắp đặt mới-Nhập số lượng
 #### giao diện trình bày
 giao diện trình bày được bố trí cấu trúc giống như giao diện trình bày của module quản lý nhà kho 
+
+
+## Yêu cầu hệ thống
+Hệ thống được định hướng dạng web app có cơ sở dữ liệu. sử dụng ngôn ngữ lập trình python, js, scss, css, html. 
+Hệ thống mặc dù là web app nhưng có thể đóng gói thành file install (exe, msi). Database dùng SQLite và không được tạo sẵn trong bộ cài. Sau khi cài đặt xong, trước khi phần mềm đi vào hoạt động, hệ thống mở giao diện setup wizard để người dùng tự chọn vị trí lưu database và xác nhận tạo database; sau đó hệ thống tự tạo tài khoản quản trị cố định `admin` với mật khẩu mặc định `admin`. Người dùng được đổi mật khẩu sau khi đăng nhập, không được đổi username `admin`. 
