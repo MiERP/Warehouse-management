@@ -1,0 +1,184 @@
+﻿# Warehouse Management
+
+Phần mềm **Warehouse Management** là ứng dụng desktop phục vụ quản lý hệ thống nhà kho, camera an ninh, hệ thống cứu hỏa và các công trình xây mới/sửa chữa/nâng cấp. Ứng dụng được xây dựng theo mô hình chạy cục bộ trên máy người dùng, sử dụng **Electron**, **SQLite** và giao diện web nội bộ.
+
+## Mục tiêu
+
+- Quản lý tập trung dữ liệu nhà kho, camera, cứu hỏa và công trình.
+- Hỗ trợ nhập liệu thủ công và import dữ liệu từ Excel.
+- Xuất dữ liệu quản lý ra Excel để phục vụ báo cáo/tổng hợp.
+- Cung cấp dashboard tổng quan và cảnh báo theo dữ liệu hiện có.
+- Tích hợp tìm kiếm thông minh nhẹ, không dùng LLM, để tra cứu nhanh dữ liệu trong cơ sở dữ liệu cục bộ.
+
+## Tính năng chính
+
+### Dashboard
+
+- Thống kê nhanh số lượng nhà kho theo phân loại.
+- Thống kê hệ thống camera, cứu hỏa và công trình.
+- Hiển thị danh sách công trình theo năm.
+- Cảnh báo dữ liệu cần chú ý theo năm xây dựng/sửa chữa/nâng cấp.
+
+### Quản lý nhà kho
+
+- Thêm, sửa, xóa, xem danh sách nhà kho.
+- Quản lý thông tin đơn vị cha/con, địa chỉ, phân loại kho.
+- Quản lý diện tích, năm xây dựng, năm sửa chữa/nâng cấp.
+- Quản lý sức chứa, trữ lượng hiện tại, loại hàng, chất lượng kho.
+- Quản lý nhu cầu và hiện trạng hệ thống cứu hỏa của nhà kho.
+- Import/export Excel.
+
+### Quản lý camera an ninh
+
+- Quản lý số lượng hệ thống/camera/màn hình.
+- Quản lý năm lắp đặt, năm sửa chữa.
+- Quản lý cơ quan chủ đầu tư, tình trạng hoạt động.
+- Quản lý nhu cầu sửa chữa/cải tạo/lắp mới.
+- Import/export Excel.
+
+### Quản lý hệ thống cứu hỏa
+
+- Quản lý hệ thống cứu hỏa tập trung theo đơn vị.
+- Quản lý số nhà bơm, số họng, năm lắp đặt/sửa chữa.
+- Quản lý tình trạng, chủ đầu tư, nhu cầu sửa chữa/lắp mới.
+- Import/export Excel.
+
+### Quản lý công trình
+
+- Quản lý công trình xây mới, sửa chữa, nâng cấp.
+- Quản lý quyết định phê duyệt, hợp đồng, nhà thầu.
+- Quản lý khối lượng, thời gian thực hiện, giá trị đầu tư/quyết toán.
+- Quản lý trạng thái, mô tả và ghi chú công trình.
+- Import/export Excel.
+
+### Cấu hình hệ thống
+
+- Quản lý phân cấp đơn vị.
+- Quản lý tỉnh/xã.
+- Quản lý danh mục loại kho, loại hàng, chất lượng kho, chống sét.
+
+## Tìm kiếm thông minh
+
+Ứng dụng có module **Smart Search** tích hợp trực tiếp vào ô tìm kiếm toàn hệ thống.
+
+Giải pháp tìm kiếm sử dụng:
+
+- **SQLite FTS5** để tìm kiếm toàn văn nhanh trong dữ liệu cục bộ.
+- **Normalize tiếng Việt** để hỗ trợ tìm kiếm có dấu/không dấu.
+- **Từ điển đồng nghĩa/viết tắt nghiệp vụ** như `cam`, `pccc`, `ct`, `hckt`, `qlda`.
+- **Rule-based query parser** để hiểu các điều kiện đơn giản như năm, số lượng, trạng thái.
+- **Ranking theo ngữ cảnh** để ưu tiên kết quả đúng phân hệ, đúng tên, đúng mã và đúng điều kiện.
+
+Ví dụ truy vấn:
+
+```text
+kho xang dau k02
+camera hong
+cuu hoa pccc
+cong trinh dang thi cong
+kho xay truoc 2010
+camera lap truoc 2020
+kho suc chua tren 100
+```
+
+## Công nghệ sử dụng
+
+- Electron
+- JavaScript
+- SQLite / better-sqlite3
+- SQLite FTS5
+- XLSX
+- Playwright cho kiểm thử UI/automation
+
+## Cài đặt và chạy ứng dụng
+
+Yêu cầu:
+
+- Node.js
+- npm
+
+Cài dependencies:
+
+```bash
+npm install
+```
+
+Chạy ứng dụng:
+
+```bash
+npm start
+```
+
+Chạy chế độ dev:
+
+```bash
+npm run dev
+```
+
+## Build ứng dụng desktop
+
+Ứng dụng dùng `electron-builder` để đóng gói.
+
+```bash
+npm run build
+```
+
+File build sẽ được sinh trong thư mục cấu hình output của Electron Builder.
+
+## Cấu trúc thư mục
+
+```text
+src/
+  main/
+    main.js                 # Electron main process
+    preload.js              # API bridge cho renderer
+    database/               # SQLite database, migrations, queries
+    search/                 # Smart Search: normalize, dictionary, FTS index, ranking
+  renderer/
+    index.html              # Giao diện chính
+    css/                    # Style giao diện
+    js/
+      app.js                # Router, dashboard, global search
+      modules/              # Module nhà kho, camera, cứu hỏa, công trình, cấu hình
+
+docs/
+  template/                 # File Excel template gốc
+  sample_data/              # Dữ liệu mẫu
+  mau_nhap_*.xlsx           # File mẫu nhập liệu
+```
+
+## Dữ liệu và lưu trữ
+
+Ứng dụng lưu dữ liệu trong SQLite cục bộ tại thư mục `userData` của Electron trên máy người dùng. Đây là mô hình phù hợp cho bản desktop chạy trên một máy, một người dùng hoặc môi trường nội bộ.
+
+## Kiểm thử và debug
+
+Một số script hỗ trợ kiểm thử/automation:
+
+```bash
+node test_smart_search.js
+node e2e_smart_search.js
+node e2e_test.js
+```
+
+Các script này dùng Playwright để kiểm tra thao tác trên ứng dụng Electron, import/export và tìm kiếm thông minh.
+
+## Ghi chú triển khai web
+
+Phiên bản hiện tại là **Electron desktop app**, không thể chạy nguyên trạng trên GitHub Pages vì GitHub Pages chỉ hỗ trợ web tĩnh. Nếu cần gửi khách hàng bản demo qua link web, nên tạo thêm bản `web-demo` tĩnh dùng JSON/localStorage hoặc triển khai backend riêng cho bản web production.
+
+## Trạng thái hiện tại
+
+- Đã có các module quản lý chính.
+- Đã có import/export Excel.
+- Đã có Smart Search bản nhẹ tích hợp vào ô tìm kiếm.
+- Đã có script test và báo cáo QA cho Smart Search.
+
+## Hướng phát triển tiếp theo
+
+- Click kết quả tìm kiếm mở đúng bản ghi chi tiết.
+- Cập nhật Smart Search index ngay sau khi thêm/sửa/xóa/import dữ liệu.
+- Tinh chỉnh ranking và dictionary theo dữ liệu thực tế.
+- Bổ sung cấu hình dictionary từ file ngoài hoặc màn hình quản trị.
+- Dọn dữ liệu trùng do test/import nhiều lần.
+- Xây dựng bản web demo nếu cần gửi khách hàng qua link `.github.io`.
