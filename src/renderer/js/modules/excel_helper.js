@@ -106,6 +106,8 @@ const excelHelper = {
     closeModal();
     showToast(`Đã import ${count}/${rows.length} dòng`, count === rows.length ? 'success' : 'warning');
     window._pendingImportRows = null;
+    if (window.api.search && window.api.search.rebuildIndex) await window.api.search.rebuildIndex();
     await this.reloadModule(moduleName);
   }
 };
+

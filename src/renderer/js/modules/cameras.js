@@ -98,3 +98,5 @@ const cameraModule = {
   async remove(id) { if (await confirmAction('Xóa hệ thống camera này?')) { await window.api.cameras.delete(id); showToast('Đã xóa','success'); this.loadList(); } },
   exportExcel() { excelHelper.exportModule('cameras', 'Camera'); }
 };
+
+window.cameraModule = cameraModule;

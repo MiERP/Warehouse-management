@@ -73,6 +73,12 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+function withSearchRebuild(operation) {
+  const result = operation();
+  try { smartSearch.rebuild(); } catch (e) { console.error('Smart search rebuild error:', e); }
+  return result;
+}
+
 function registerIpcHandlers() {
   // === UNITS ===
   ipcMain.handle('units:getAll', () => unitQueries.getAll());
@@ -100,31 +106,31 @@ function registerIpcHandlers() {
   // === WAREHOUSES ===
   ipcMain.handle('warehouses:getAll', () => warehouseQueries.getAll());
   ipcMain.handle('warehouses:getById', (_, id) => warehouseQueries.getById(id));
-  ipcMain.handle('warehouses:create', (_, data) => warehouseQueries.create(data));
-  ipcMain.handle('warehouses:update', (_, id, data) => warehouseQueries.update(id, data));
-  ipcMain.handle('warehouses:delete', (_, id) => warehouseQueries.remove(id));
+  ipcMain.handle('warehouses:create', (_, data) => withSearchRebuild(() => warehouseQueries.create(data)));
+  ipcMain.handle('warehouses:update', (_, id, data) => withSearchRebuild(() => warehouseQueries.update(id, data)));
+  ipcMain.handle('warehouses:delete', (_, id) => withSearchRebuild(() => warehouseQueries.remove(id)));
   ipcMain.handle('warehouses:search', (_, query) => warehouseQueries.search(query));
 
   // === CAMERAS ===
   ipcMain.handle('cameras:getAll', () => cameraQueries.getAll());
   ipcMain.handle('cameras:getById', (_, id) => cameraQueries.getById(id));
-  ipcMain.handle('cameras:create', (_, data) => cameraQueries.create(data));
-  ipcMain.handle('cameras:update', (_, id, data) => cameraQueries.update(id, data));
-  ipcMain.handle('cameras:delete', (_, id) => cameraQueries.remove(id));
+  ipcMain.handle('cameras:create', (_, data) => withSearchRebuild(() => cameraQueries.create(data)));
+  ipcMain.handle('cameras:update', (_, id, data) => withSearchRebuild(() => cameraQueries.update(id, data)));
+  ipcMain.handle('cameras:delete', (_, id) => withSearchRebuild(() => cameraQueries.remove(id)));
 
   // === FIRE SYSTEMS ===
   ipcMain.handle('fireSystems:getAll', () => fireSystemQueries.getAll());
   ipcMain.handle('fireSystems:getById', (_, id) => fireSystemQueries.getById(id));
-  ipcMain.handle('fireSystems:create', (_, data) => fireSystemQueries.create(data));
-  ipcMain.handle('fireSystems:update', (_, id, data) => fireSystemQueries.update(id, data));
-  ipcMain.handle('fireSystems:delete', (_, id) => fireSystemQueries.remove(id));
+  ipcMain.handle('fireSystems:create', (_, data) => withSearchRebuild(() => fireSystemQueries.create(data)));
+  ipcMain.handle('fireSystems:update', (_, id, data) => withSearchRebuild(() => fireSystemQueries.update(id, data)));
+  ipcMain.handle('fireSystems:delete', (_, id) => withSearchRebuild(() => fireSystemQueries.remove(id)));
 
   // === CONSTRUCTIONS ===
   ipcMain.handle('constructions:getAll', () => constructionQueries.getAll());
   ipcMain.handle('constructions:getById', (_, id) => constructionQueries.getById(id));
-  ipcMain.handle('constructions:create', (_, data) => constructionQueries.create(data));
-  ipcMain.handle('constructions:update', (_, id, data) => constructionQueries.update(id, data));
-  ipcMain.handle('constructions:delete', (_, id) => constructionQueries.remove(id));
+  ipcMain.handle('constructions:create', (_, data) => withSearchRebuild(() => constructionQueries.create(data)));
+  ipcMain.handle('constructions:update', (_, id, data) => withSearchRebuild(() => constructionQueries.update(id, data)));
+  ipcMain.handle('constructions:delete', (_, id) => withSearchRebuild(() => constructionQueries.remove(id)));
 
   // === EXCEL IMPORT/EXPORT ===
   ipcMain.handle('dialog:openFile', async (_, filters) => {

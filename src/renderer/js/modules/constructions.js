@@ -134,3 +134,5 @@ const constructionModule = {
   async remove(id) { if (await confirmAction('Xóa công trình này?')) { await window.api.constructions.delete(id); showToast('Đã xóa','success'); this.loadList(); } },
   exportExcel() { excelHelper.exportModule('constructions', 'Cong_trinh'); }
 };
+
+window.constructionModule = constructionModule;

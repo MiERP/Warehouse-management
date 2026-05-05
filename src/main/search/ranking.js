@@ -16,7 +16,8 @@ function moduleBoost(parsed, row) {
 }
 
 function fieldBoost(parsed, row) {
-  const terms = parsed.terms.filter(term => term.length > 1);
+  const stopTerms = new Set(['can', 'chua', 'co', 'khong', 'nam', 'truoc', 'sau', 'tren', 'duoi', 'hon', 'tu', 'den']);
+  const terms = parsed.terms.filter(term => term.length > 1 && !stopTerms.has(term));
   const title = normalizeVietnamese(row.title);
   const unit = normalizeVietnamese(row.unit_name || row.subtitle);
   const status = normalizeVietnamese(row.status);
@@ -38,8 +39,8 @@ function statusBoost(parsed, row) {
   const text = normalizeVietnamese(`${row.status} ${row.notes} ${row.normalized_text}`);
   let score = 0;
   if ((parsed.statusFlags.broken || parsed.statusFlags.repair) && /hong|loi|sua chua|bao tri|khong hoat dong|mat tin hieu/.test(text)) score += 20;
-  if (parsed.statusFlags.missing && /khong|chua co|thieu|0/.test(text)) score += 10;
-  if (parsed.statusFlags.unsettled && row.module === 'construction' && /quyet toan|0/.test(text)) score += 15;
+  if (parsed.statusFlags.missing && /khong|chua co|thieu|0/.test(text)) score += 15;
+  if (parsed.statusFlags.unsettled && row.module === 'construction') score += /0|chua|quyet toan/.test(text) ? 30 : 12;
   if (parsed.statusFlags.inProgress && /dang thi cong|dang thuc hien|thi cong/.test(text)) score += 15;
   if (parsed.statusFlags.completed && /hoan thanh/.test(text)) score += 15;
   return score;

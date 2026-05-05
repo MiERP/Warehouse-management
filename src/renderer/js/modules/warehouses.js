@@ -166,3 +166,5 @@ const warehouseModule = {
 
   exportExcel() { excelHelper.exportModule('warehouses', 'Nha_kho'); }
 };
+
+window.warehouseModule = warehouseModule;

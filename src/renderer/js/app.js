@@ -171,6 +171,18 @@ function escapeHTML(value) {
   return String(value || '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 }
 
+async function openSearchResult(module, id) {
+  const modulePages = { warehouse: 'warehouses', camera: 'cameras', fire: 'fire-systems', construction: 'constructions' };
+  navigateTo(modulePages[module]);
+  searchResults.style.display = 'none';
+  searchInput.value = '';
+  await new Promise(resolve => setTimeout(resolve, 150));
+  if (module === 'warehouse' && window.warehouseModule) return warehouseModule.edit(id);
+  if (module === 'camera' && window.cameraModule) return cameraModule.edit(id);
+  if (module === 'fire' && window.fireModule) return fireModule.edit(id);
+  if (module === 'construction' && window.constructionModule) return constructionModule.edit(id);
+}
+
 function renderSearchResults(results) {
   const moduleLabels = { warehouse: 'Nhà kho', camera: 'Camera', fire: 'Cứu hỏa', construction: 'Công trình' };
   const modulePages = { warehouse: 'warehouses', camera: 'cameras', fire: 'fire-systems', construction: 'constructions' };
@@ -187,7 +199,7 @@ function renderSearchResults(results) {
     return `
       <div class="search-result-item" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border-color);transition:background 0.15s"
         onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''"
-        onclick="navigateTo('${modulePages[r.module]}');searchResults.style.display='none';searchInput.value=''">
+        onclick="openSearchResult('${r.module}', ${Number(r.id || r.record_id)})">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
           <div style="font-weight:600;font-size:13px">${escapeHTML(r.title)}</div>
           <div style="font-size:10px;color:var(--text-muted)">${Math.round(r.score || 0)}</div>

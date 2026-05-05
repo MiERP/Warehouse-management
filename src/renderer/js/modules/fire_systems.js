@@ -99,3 +99,5 @@ const fireModule = {
   async remove(id) { if (await confirmAction('Xóa hệ thống cứu hỏa này?')) { await window.api.fireSystems.delete(id); showToast('Đã xóa','success'); this.loadList(); } },
   exportExcel() { excelHelper.exportModule('fireSystems', 'Cuu_hoa'); }
 };
+
+window.fireModule = fireModule;
