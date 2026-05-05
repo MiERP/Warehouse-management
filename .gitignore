@@ -1,0 +1,12 @@
+﻿node_modules/
+dist/
+out/
+build/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+*.webm
+docs/recordings/
+docs/export_*_debug.xlsx
+docs/export_*_template_debug.xlsx
