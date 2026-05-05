@@ -1,0 +1,39 @@
+{
+  "name": "warehouse-management",
+  "version": "1.0.0",
+  "description": "Phần mềm quản lý nhà kho - Warehouse Management",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "rebuild": "electron-rebuild"
+  },
+  "author": "Admin",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "electron-rebuild": "^3.2.9",
+    "playwright": "^1.59.1"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "build": {
+    "appId": "com.warehouse.management",
+    "productName": "Warehouse Management",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "src/renderer/assets/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

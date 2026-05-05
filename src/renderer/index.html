@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warehouse Management</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">W</div>
+        <span class="sidebar-title">Quản lý Kho</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Tổng quan</div>
+        <div class="nav-item active" data-page="dashboard" id="nav-dashboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span class="nav-label">Dashboard</span>
+        </div>
+
+        <div class="nav-section-label">Quản lý</div>
+        <div class="nav-item" data-page="warehouses" id="nav-warehouses">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span class="nav-label">Nhà kho</span>
+        </div>
+        <div class="nav-item" data-page="fire-systems" id="nav-fire-systems">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 6-2 9a4 4 0 108 0c0-3-3-6-2-9"/><path d="M12 11a2 2 0 104 0c0-1-1-2-2-3-1 1-2 2-2 3z"/></svg>
+          <span class="nav-label">Hệ thống cứu hỏa</span>
+        </div>
+        <div class="nav-item" data-page="cameras" id="nav-cameras">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span class="nav-label">Camera an ninh</span>
+        </div>
+        <div class="nav-item" data-page="constructions" id="nav-constructions">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>
+          <span class="nav-label">Công trình</span>
+        </div>
+
+        <div class="nav-section-label">Hệ thống</div>
+        <div class="nav-item" data-page="config" id="nav-config">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span class="nav-label">Cấu hình</span>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-area">
+      <header class="header">
+        <h1 class="header-title" id="header-title">Dashboard</h1>
+        <div class="search-box" style="position:relative">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Tìm kiếm toàn hệ thống..." id="global-search">
+          <div class="search-results" id="search-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);max-height:300px;overflow-y:auto;z-index:100;margin-top:4px"></div>
+        </div>
+        <div class="header-user" title="Admin">A</div>
+      </header>
+
+      <div class="content" id="content">
+        <!-- Dashboard Page — Redesigned theo mockup -->
+        <div class="page active" id="page-dashboard">
+          <div class="stat-cards">
+            <div class="stat-card" onclick="navigateTo('warehouses')" style="cursor:pointer">
+              <div class="stat-icon blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">Kho Chiến dịch</div>
+                <div class="stat-value" id="stat-chien-dich">0</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="navigateTo('warehouses')" style="cursor:pointer">
+              <div class="stat-icon green">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">Kho Chiến thuật</div>
+                <div class="stat-value" id="stat-chien-thuat">0</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="navigateTo('cameras')" style="cursor:pointer">
+              <div class="stat-icon yellow">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">Hệ thống Camera</div>
+                <div class="stat-value" id="stat-cameras">0</div>
+              </div>
+            </div>
+            <div class="stat-card" onclick="navigateTo('fire-systems')" style="cursor:pointer">
+              <div class="stat-icon red">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c1 3-2 6-2 9a4 4 0 108 0c0-3-3-6-2-9"/></svg>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">HT Cứu hỏa tập trung</div>
+                <div class="stat-value" id="stat-fire">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danh sách nhà kho theo phân loại -->
+          <div class="card" style="margin-bottom:var(--space-lg)">
+            <div class="card-header"><h3 class="card-title">Số lượng nhà kho theo phân loại kho</h3></div>
+            <div id="dashboard-warehouse-types" style="padding:var(--space-md)">
+              <p style="color:var(--text-muted)">Đang tải...</p>
+            </div>
+          </div>
+
+          <!-- Công trình theo năm -->
+          <div class="card" style="margin-bottom:var(--space-lg)">
+            <div class="card-header"><h3 class="card-title">Dự án công trình năm <span id="dashboard-current-year"></span></h3></div>
+            <div id="dashboard-constructions" style="padding:var(--space-md)">
+              <p style="color:var(--text-muted)">Đang tải...</p>
+            </div>
+          </div>
+
+          <!-- Cảnh báo -->
+          <div class="card">
+            <div class="card-header"><h3 class="card-title" style="color:var(--color-warning)">⚠ Cảnh báo theo năm xây dựng, sửa chữa, nâng cấp</h3></div>
+            <div id="dashboard-alerts" style="padding:var(--space-md)">
+              <p style="color:var(--text-muted)">Đang tải...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warehouses Page -->
+        <div class="page" id="page-warehouses">
+          <div class="toolbar">
+            <button class="btn btn-primary" id="btn-warehouse-add" onclick="warehouseModule.showForm()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Thêm nhà kho
+            </button>
+            <div class="toolbar-spacer"></div>
+            <button class="btn btn-secondary" onclick="excelHelper.importModule('warehouses')">Import Excel</button>
+            <button class="btn btn-secondary" onclick="excelHelper.exportModule('warehouses','Nha_kho')">Export Excel</button>
+          </div>
+          <div id="warehouse-form-container"></div>
+          <div class="table-container" id="warehouse-table-container" style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tên kho</th><th>Đơn vị cha</th><th>Đơn vị con</th>
+                  <th>Phân loại</th><th>Địa điểm</th><th>Loại kho</th>
+                  <th>Chất lượng</th><th>DT kho (m²)</th><th>Sức chứa</th><th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="warehouse-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Cameras Page -->
+        <div class="page" id="page-cameras">
+          <div class="toolbar">
+            <button class="btn btn-primary" id="btn-camera-add" onclick="cameraModule.showForm()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Thêm camera
+            </button>
+            <div class="toolbar-spacer"></div>
+            <button class="btn btn-secondary" onclick="excelHelper.importModule('cameras')">Import Excel</button>
+            <button class="btn btn-secondary" onclick="excelHelper.exportModule('cameras','Camera')">Export Excel</button>
+          </div>
+          <div id="camera-form-container"></div>
+          <div class="table-container" id="camera-table-container" style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Đơn vị cha</th><th>Tên đơn vị</th><th>ĐVT</th><th>Số lượng</th>
+                  <th>Năm lắp đặt</th><th>Năm sửa chữa</th><th>Số màn hình</th>
+                  <th>Số CAM</th><th>CQ chủ đầu tư</th><th>Tình trạng</th>
+                  <th>SC, cải tạo</th><th>Lắp mới</th><th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="camera-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Fire Systems Page -->
+        <div class="page" id="page-fire-systems">
+          <div class="toolbar">
+            <button class="btn btn-primary" onclick="fireModule.showForm()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Thêm cứu hỏa
+            </button>
+            <div class="toolbar-spacer"></div>
+            <button class="btn btn-secondary" onclick="excelHelper.importModule('fireSystems')">Import Excel</button>
+            <button class="btn btn-secondary" onclick="excelHelper.exportModule('fireSystems','Cuu_hoa')">Export Excel</button>
+          </div>
+          <div id="fire-form-container"></div>
+          <div class="table-container" style="overflow-x:auto">
+            <table><thead><tr>
+              <th>Đơn vị cha</th><th>Tên đơn vị</th><th>ĐVT</th><th>Số lượng</th>
+              <th>Năm lắp đặt</th><th>Năm sửa chữa</th><th>Số nhà bơm</th>
+              <th>Số họng</th><th>CQ chủ đầu tư</th><th>Tình trạng</th>
+              <th>SC, cải tạo</th><th>Lắp mới</th><th>Thao tác</th>
+            </tr></thead>
+            <tbody id="fire-table-body"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Constructions Page -->
+        <div class="page" id="page-constructions">
+          <div class="toolbar">
+            <button class="btn btn-primary" onclick="constructionModule.showForm()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Thêm công trình
+            </button>
+            <div class="toolbar-spacer"></div>
+            <button class="btn btn-secondary" onclick="excelHelper.importModule('constructions')">Import Excel</button>
+            <button class="btn btn-secondary" onclick="excelHelper.exportModule('constructions','Cong_trinh')">Export Excel</button>
+          </div>
+          <div id="construction-form-container"></div>
+          <div class="table-container" style="overflow-x:auto">
+            <table><thead><tr>
+              <th>Nội dung</th><th>Loại CT</th><th>Năm HT</th><th>Số QĐ</th>
+              <th>Số HĐ</th><th>Nhà thầu</th><th>Trạng thái</th>
+              <th>Đầu tư duyệt</th><th>Dự toán</th><th>Giá trị HĐ</th>
+              <th>Quyết toán</th><th>Thao tác</th>
+            </tr></thead>
+            <tbody id="construction-table-body"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Config Page -->
+        <div class="page" id="page-config">
+          <div class="tab-bar" id="config-tabs">
+            <div class="tab-item active" data-tab="config-units">Phân cấp đơn vị</div>
+            <div class="tab-item" data-tab="config-locations">Địa phương</div>
+            <div class="tab-item" data-tab="config-warehouse-types">Loại nhà kho</div>
+            <div class="tab-item" data-tab="config-goods-types">Loại hàng</div>
+            <div class="tab-item" data-tab="config-quality-grades">Chất lượng</div>
+            <div class="tab-item" data-tab="config-lightning">Chống sét</div>
+          </div>
+
+          <div class="tab-content active" id="config-units">
+            <div class="toolbar">
+              <button class="btn btn-primary" onclick="configModule.addUnit()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Thêm đơn vị
+              </button>
+            </div>
+            <div class="card"><ul class="tree-view" id="units-tree"></ul></div>
+          </div>
+
+          <div class="tab-content" id="config-locations">
+            <div class="toolbar">
+              <button class="btn btn-primary" onclick="configModule.addProvince()">Thêm tỉnh</button>
+              <button class="btn btn-secondary" onclick="configModule.addWard()">Thêm xã</button>
+              <div class="toolbar-spacer"></div>
+              <button class="btn btn-secondary" onclick="configModule.importLocations()">Import Excel</button>
+            </div>
+            <div class="form-grid-2" style="gap: var(--space-lg);">
+              <div class="card"><div class="card-header"><h3 class="card-title">Danh sách tỉnh</h3></div><div id="provinces-list"></div></div>
+              <div class="card"><div class="card-header"><h3 class="card-title">Danh sách xã</h3></div><div id="wards-list"></div></div>
+            </div>
+          </div>
+
+          <div class="tab-content" id="config-warehouse-types">
+            <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('warehouse_types', 'Loại nhà kho')">Thêm loại</button></div>
+            <div class="card"><div id="warehouse-types-list"></div></div>
+          </div>
+          <div class="tab-content" id="config-goods-types">
+            <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('goods_types', 'Loại hàng')">Thêm loại</button></div>
+            <div class="card"><div id="goods-types-list"></div></div>
+          </div>
+          <div class="tab-content" id="config-quality-grades">
+            <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('quality_grades', 'Chất lượng')">Thêm mức</button></div>
+            <div class="card"><div id="quality-grades-list"></div></div>
+          </div>
+          <div class="tab-content" id="config-lightning">
+            <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('lightning_protection', 'Chống sét')">Thêm loại</button></div>
+            <div class="card"><div id="lightning-list"></div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Container -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title">Modal</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/mock_api.js"></script>
+  <script src="js/modules/charts.js"></script>
+  <script src="js/modules/excel_helper.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/modules/config.js"></script>
+  <script src="js/modules/warehouses.js"></script>
+  <script src="js/modules/cameras.js"></script>
+  <script src="js/modules/fire_systems.js"></script>
+  <script src="js/modules/constructions.js"></script>
+</body>
+</html>

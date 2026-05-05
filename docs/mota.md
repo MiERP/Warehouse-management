@@ -64,5 +64,4 @@ giao diện trình bày được bố trí cấu trúc giống như giao diện 
 
 
 ## Yêu cầu hệ thống
-Hệ thống được định hướng dạng web app có cơ sở dữ liệu. sử dụng ngôn ngữ lập trình python, js, scss, css, html. 
-Hệ thống mặc dù là web app nhưng có thể đóng gói thành file install (exe, msi). Database dùng SQLite và không được tạo sẵn trong bộ cài. Sau khi cài đặt xong, trước khi phần mềm đi vào hoạt động, hệ thống mở giao diện setup wizard để người dùng tự chọn vị trí lưu database và xác nhận tạo database; sau đó hệ thống tự tạo tài khoản quản trị cố định `admin` với mật khẩu mặc định `admin`. Người dùng được đổi mật khẩu sau khi đăng nhập, không được đổi username `admin`. 
+desktop app.

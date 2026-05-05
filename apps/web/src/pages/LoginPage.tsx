@@ -1,5 +1,0 @@
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { App, Button, Card, Form, Input, Typography } from 'antd';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '../features/auth';
-export function LoginPage() { const auth = useAuth(); const navigate = useNavigate(); const { message } = App.useApp(); if (auth.user) return <Navigate to="/dashboard" replace />; return <div className="auth-shell"><Card className="auth-card"><Typography.Title level={3}>Đăng nhập quản trị</Typography.Title><Typography.Paragraph type="secondary">Tài khoản cố định: admin</Typography.Paragraph><Form layout="vertical" onFinish={async ({ password }) => { try { await auth.login(password); navigate('/dashboard'); } catch (error) { message.error((error as Error).message); } }}><Form.Item label="Username"><Input prefix={<UserOutlined />} value="admin" disabled /></Form.Item><Form.Item name="password" label="Mật khẩu" rules={[{ required:true, message:'Nhập mật khẩu' }]}><Input.Password prefix={<LockOutlined />} autoFocus /></Form.Item><Button type="primary" htmlType="submit" block>Đăng nhập</Button></Form></Card></div>; }
