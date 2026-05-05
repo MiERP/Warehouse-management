@@ -1,0 +1,44 @@
+[
+  {
+    "unit_measure": "Hệ thống",
+    "quantity": 1,
+    "year_installed": 2022,
+    "year_repaired": null,
+    "screen_count": 4,
+    "camera_count": 24,
+    "investor": "Cục HC-KT",
+    "status": "Hoạt động bình thường",
+    "repair_need": 0,
+    "new_install_need": 0,
+    "notes": "Camera an ninh vòng ngoài kho K01",
+    "id": 1
+  },
+  {
+    "unit_measure": "Bộ",
+    "quantity": 2,
+    "year_installed": 2020,
+    "year_repaired": 2024,
+    "screen_count": 2,
+    "camera_count": 12,
+    "investor": "Phòng HC-KT Vùng",
+    "status": "Đã sửa chữa",
+    "repair_need": 0,
+    "new_install_need": 1,
+    "notes": "Camera khu vực kho K02",
+    "id": 2
+  },
+  {
+    "unit_measure": "Hệ thống",
+    "quantity": 1,
+    "year_installed": 2024,
+    "year_repaired": null,
+    "screen_count": 6,
+    "camera_count": 32,
+    "investor": "Ban QLDA",
+    "status": "Mới lắp đặt",
+    "repair_need": 0,
+    "new_install_need": 0,
+    "notes": "Hệ thống camera AI mới",
+    "id": 3
+  }
+]

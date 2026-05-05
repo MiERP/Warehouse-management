@@ -1,0 +1,90 @@
+{
+  "timestamp": "2026-05-05T16:22:26.207Z",
+  "checks": [
+    {
+      "name": "smart search returns camera results",
+      "ok": true,
+      "detail": {
+        "top": {
+          "module": "camera",
+          "id": 14,
+          "record_id": 14,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Đã sửa chữa",
+          "score": 198,
+          "matched_reason": [
+            "camera",
+            "hong",
+            "sua",
+            "chua",
+            "đúng phân hệ"
+          ]
+        }
+      }
+    },
+    {
+      "name": "search result opens record form",
+      "ok": true,
+      "detail": {
+        "formName": "Kho Xăng dầu K02"
+      }
+    },
+    {
+      "name": "validation rejects invalid warehouse",
+      "ok": true,
+      "detail": {
+        "validationMessage": "Error invoking remote method 'warehouses:create': Error: Tên kho là bắt buộc; DT nhà kho không được âm; Năm xây dựng phải nằm trong khoảng 1900-2027"
+      }
+    },
+    {
+      "name": "search index syncs after create",
+      "ok": true,
+      "detail": {
+        "created": {
+          "id": 26,
+          "unit_measure": "Hệ thống",
+          "quantity": 1,
+          "camera_count": 1,
+          "status": "SmokeSync1777998146942",
+          "notes": "SmokeSync1777998146942",
+          "parent_unit_id": null,
+          "child_unit_id": null,
+          "year_installed": null,
+          "year_repaired": null,
+          "screen_count": 0,
+          "investor": null,
+          "repair_need": 0,
+          "new_install_need": 0
+        },
+        "synced": {
+          "module": "camera",
+          "id": 26,
+          "record_id": 26,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "SmokeSync1777998146942",
+          "score": 176,
+          "matched_reason": [
+            "smokesync1777998146942"
+          ]
+        }
+      }
+    },
+    {
+      "name": "backup file created",
+      "ok": true,
+      "detail": {
+        "success": true,
+        "filePath": "C:\\Users\\Admin\\AppData\\Roaming\\warehouse-management\\backups\\warehouse-2026-05-05T16-22-26-967Z.db"
+      }
+    },
+    {
+      "name": "no renderer runtime errors",
+      "ok": true,
+      "detail": {
+        "errors": []
+      }
+    }
+  ]
+}

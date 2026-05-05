@@ -1,0 +1,504 @@
+{
+  "timestamp": "2026-05-05T16:22:23.719Z",
+  "results": [
+    {
+      "query": "kho xang dau",
+      "count": 5,
+      "top": [
+        {
+          "module": "warehouse",
+          "id": 13,
+          "record_id": 13,
+          "title": "Kho Xăng dầu K02",
+          "subtitle": "",
+          "status": "chien_dich Cần thiết Có",
+          "score": 161,
+          "matched_reason": [
+            "kho",
+            "xang",
+            "dau",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "warehouse",
+          "id": 17,
+          "record_id": 17,
+          "title": "Kho Xăng dầu K02",
+          "subtitle": "",
+          "status": "chien_dich Cần thiết Có",
+          "score": 161,
+          "matched_reason": [
+            "kho",
+            "xang",
+            "dau",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "warehouse",
+          "id": 3,
+          "record_id": 3,
+          "title": "Nhà kho K3/K708",
+          "subtitle": "Vùng 1 Hải quân",
+          "status": "chien_thuat",
+          "score": 160,
+          "matched_reason": [
+            "kho",
+            "xang",
+            "dau",
+            "đúng phân hệ"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "kho k02",
+      "count": 5,
+      "top": [
+        {
+          "module": "warehouse",
+          "id": 13,
+          "record_id": 13,
+          "title": "Kho Xăng dầu K02",
+          "subtitle": "",
+          "status": "chien_dich Cần thiết Có",
+          "score": 207,
+          "matched_reason": [
+            "kho",
+            "k02",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "warehouse",
+          "id": 17,
+          "record_id": 17,
+          "title": "Kho Xăng dầu K02",
+          "subtitle": "",
+          "status": "chien_dich Cần thiết Có",
+          "score": 207,
+          "matched_reason": [
+            "kho",
+            "k02",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "warehouse",
+          "id": 14,
+          "record_id": 14,
+          "title": "Kho Lương thực K03",
+          "subtitle": "",
+          "status": "chien_thuat Cần thiết Có",
+          "score": 153,
+          "matched_reason": [
+            "kho",
+            "đúng phân hệ"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "camera hong",
+      "count": 5,
+      "top": [
+        {
+          "module": "camera",
+          "id": 14,
+          "record_id": 14,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Đã sửa chữa",
+          "score": 198,
+          "matched_reason": [
+            "camera",
+            "hong",
+            "sua",
+            "chua",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "camera",
+          "id": 10,
+          "record_id": 10,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Đã sửa chữa",
+          "score": 198,
+          "matched_reason": [
+            "camera",
+            "hong",
+            "sua",
+            "chua",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "camera",
+          "id": 13,
+          "record_id": 13,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Hoạt động bình thường",
+          "score": 193,
+          "matched_reason": [
+            "camera",
+            "hong",
+            "hoat",
+            "dong",
+            "đúng phân hệ"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "cam can sua chua",
+      "count": 5,
+      "top": [
+        {
+          "module": "camera",
+          "id": 14,
+          "record_id": 14,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Đã sửa chữa",
+          "score": 193,
+          "matched_reason": [
+            "cam",
+            "sua",
+            "chua",
+            "camera",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "camera",
+          "id": 10,
+          "record_id": 10,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Đã sửa chữa",
+          "score": 193,
+          "matched_reason": [
+            "cam",
+            "sua",
+            "chua",
+            "camera",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "camera",
+          "id": 18,
+          "record_id": 18,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Màn hình bình thường, 05 CAM hỏng, 10 CAM bình thường",
+          "score": 190,
+          "matched_reason": [
+            "cam",
+            "camera",
+            "đúng phân hệ"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "cuu hoa pccc",
+      "count": 5,
+      "top": [
+        {
+          "module": "fire",
+          "id": 12,
+          "record_id": 12,
+          "title": "Hệ thống cứu hỏa",
+          "subtitle": "",
+          "status": "Hoạt động bình thường",
+          "score": 180,
+          "matched_reason": [
+            "cuu",
+            "hoa",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "fire",
+          "id": 9,
+          "record_id": 9,
+          "title": "Hệ thống cứu hỏa",
+          "subtitle": "",
+          "status": "Hoạt động bình thường",
+          "score": 180,
+          "matched_reason": [
+            "cuu",
+            "hoa",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "fire",
+          "id": 11,
+          "record_id": 11,
+          "title": "Hệ thống cứu hỏa",
+          "subtitle": "",
+          "status": "Hoạt động bình thường",
+          "score": 175,
+          "matched_reason": [
+            "cuu",
+            "hoa",
+            "đúng phân hệ"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "cong trinh chua quyet toan",
+      "count": 5,
+      "top": [
+        {
+          "module": "construction",
+          "id": 10,
+          "record_id": 10,
+          "title": "Thi công xây dựng (Gói thầu số 04 - Hà Thanh))",
+          "subtitle": "Vùng 1 Hải quân",
+          "status": "Đang thi công",
+          "score": 203,
+          "matched_reason": [
+            "cong",
+            "thanh",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "construction",
+          "id": 20,
+          "record_id": 20,
+          "title": "Thi công xây dựng (Gói thầu số 05 - Thành Công)",
+          "subtitle": "Vùng 1 Hải quân",
+          "status": "Đang thi công",
+          "score": 203,
+          "matched_reason": [
+            "cong",
+            "thanh",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "construction",
+          "id": 5,
+          "record_id": 5,
+          "title": "Thi công xây dựng (Gói thầu số 04 - Hà Thanh)",
+          "subtitle": "Vùng 1 Hải quân",
+          "status": "Đang thi công",
+          "score": 203,
+          "matched_reason": [
+            "cong",
+            "thanh",
+            "đúng phân hệ"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "cong trinh dang thi cong",
+      "count": 5,
+      "top": [
+        {
+          "module": "construction",
+          "id": 6,
+          "record_id": 6,
+          "title": "Công trình:  Hoàn thiện hạ tầng kỹ thuật nhà O, G/Lữ đoàn 170",
+          "subtitle": "Vùng 1 Hải quân",
+          "status": "Đang thi công",
+          "score": 184,
+          "matched_reason": [
+            "cong",
+            "trinh",
+            "dang",
+            "thi",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "construction",
+          "id": 19,
+          "record_id": 19,
+          "title": "Thi công xây dựng (Gói thầu số 04 - Lộc Phát)",
+          "subtitle": "Vùng 1 Hải quân",
+          "status": "Đang thi công",
+          "score": 183,
+          "matched_reason": [
+            "cong",
+            "dang",
+            "thi",
+            "đúng phân hệ"
+          ]
+        },
+        {
+          "module": "construction",
+          "id": 1,
+          "record_id": 1,
+          "title": "Công trình: Sửa chữa, nâng cấp nhà trạm tổng hợp Lữ đoàn 147/Vùng 1",
+          "subtitle": "Vùng 1 Hải quân",
+          "status": "Đang thi công",
+          "score": 183,
+          "matched_reason": [
+            "cong",
+            "trinh",
+            "dang",
+            "thi",
+            "đúng phân hệ"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "kho xay truoc 2010",
+      "count": 5,
+      "top": [
+        {
+          "module": "warehouse",
+          "id": 13,
+          "record_id": 13,
+          "title": "Kho Xăng dầu K02",
+          "subtitle": "",
+          "status": "chien_dich Cần thiết Có",
+          "score": 156,
+          "matched_reason": [
+            "kho",
+            "đúng phân hệ",
+            "khớp điều kiện lọc"
+          ]
+        },
+        {
+          "module": "warehouse",
+          "id": 17,
+          "record_id": 17,
+          "title": "Kho Xăng dầu K02",
+          "subtitle": "",
+          "status": "chien_dich Cần thiết Có",
+          "score": 156,
+          "matched_reason": [
+            "kho",
+            "đúng phân hệ",
+            "khớp điều kiện lọc"
+          ]
+        },
+        {
+          "module": "warehouse",
+          "id": 14,
+          "record_id": 14,
+          "title": "Kho Lương thực K03",
+          "subtitle": "",
+          "status": "chien_thuat Cần thiết Có",
+          "score": 153,
+          "matched_reason": [
+            "kho",
+            "đúng phân hệ",
+            "khớp điều kiện lọc"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "camera lap truoc 2020",
+      "count": 5,
+      "top": [
+        {
+          "module": "camera",
+          "id": 15,
+          "record_id": 15,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Mới lắp đặt",
+          "score": 170,
+          "matched_reason": [
+            "camera",
+            "lap",
+            "đúng phân hệ",
+            "khớp điều kiện lọc"
+          ]
+        },
+        {
+          "module": "camera",
+          "id": 11,
+          "record_id": 11,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Mới lắp đặt",
+          "score": 170,
+          "matched_reason": [
+            "camera",
+            "lap",
+            "đúng phân hệ",
+            "khớp điều kiện lọc"
+          ]
+        },
+        {
+          "module": "camera",
+          "id": 14,
+          "record_id": 14,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Đã sửa chữa",
+          "score": 167,
+          "matched_reason": [
+            "camera",
+            "đúng phân hệ",
+            "khớp điều kiện lọc"
+          ]
+        }
+      ]
+    },
+    {
+      "query": "kho suc chua tren 100",
+      "count": 5,
+      "top": [
+        {
+          "module": "warehouse",
+          "id": 10,
+          "record_id": 10,
+          "title": "Kho Thủ công Test E2E",
+          "subtitle": "Vùng 1 Hải quân",
+          "status": "chien_thuat",
+          "score": 154,
+          "matched_reason": [
+            "kho",
+            "đúng phân hệ",
+            "khớp điều kiện lọc"
+          ]
+        },
+        {
+          "module": "warehouse",
+          "id": 14,
+          "record_id": 14,
+          "title": "Kho Lương thực K03",
+          "subtitle": "",
+          "status": "chien_thuat Cần thiết Có",
+          "score": 153,
+          "matched_reason": [
+            "kho",
+            "đúng phân hệ",
+            "khớp điều kiện lọc"
+          ]
+        },
+        {
+          "module": "warehouse",
+          "id": 18,
+          "record_id": 18,
+          "title": "Kho Lương thực K03",
+          "subtitle": "",
+          "status": "chien_thuat Cần thiết Có",
+          "score": 153,
+          "matched_reason": [
+            "kho",
+            "đúng phân hệ",
+            "khớp điều kiện lọc"
+          ]
+        }
+      ]
+    }
+  ]
+}

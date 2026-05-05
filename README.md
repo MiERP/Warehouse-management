@@ -182,3 +182,50 @@ Phiên bản hiện tại là **Electron desktop app**, không thể chạy nguy
 - Bổ sung cấu hình dictionary từ file ngoài hoặc màn hình quản trị.
 - Dọn dữ liệu trùng do test/import nhiều lần.
 - Xây dựng bản web demo nếu cần gửi khách hàng qua link `.github.io`.
+
+## Production Hardening (`hardening/v0.2`)
+
+Dự án đã có mốc rollback an toàn trước khi nâng cấp production:
+
+```bash
+git checkout v0.1.0-mvp
+```
+
+Nhánh phát triển hardening:
+
+```bash
+git checkout hardening/v0.2
+```
+
+Các nâng cấp trong nhánh này:
+
+- Validation tại main process cho Nhà kho, Camera, Cứu hỏa và Công trình.
+- Audit log cho thao tác tạo/sửa/xóa/export/backup.
+- Backup/restore IPC API và lịch sử backup.
+- Schema migration tracking bằng bảng `schema_migrations`.
+- File guard cho Excel import/export: chỉ đọc/ghi đường dẫn đã chọn qua dialog của ứng dụng.
+- Import Excel có escape HTML và báo cáo lỗi dòng import.
+- Test smoke tổng hợp cho Electron, Smart Search, mở record, validation, index sync và backup.
+
+### Lệnh kiểm tra
+
+```bash
+npm run check
+npm run test:search
+npm run test:smoke
+npm test
+```
+
+### Báo cáo liên quan
+
+- `docs/production_hardening_plan.md`
+- `docs/production_hardening_report.md`
+- `docs/hardening_smoke_report.json`
+
+### Lưu ý production còn lại
+
+- Chưa có auth/session thật cho nhiều người dùng.
+- Renderer vẫn còn một số vùng legacy dùng `innerHTML`; cần tiếp tục thay bằng safe rendering.
+- Backup/restore API đã có nhưng cần UI quản trị hoàn chỉnh.
+- Migration tracking đã có nhưng legacy migrations chưa tách hết thành từng version file.
+- Mapping Excel template chính thức cho `KHO.xls` và `CONG-TRINH.xlsx` cần parser chuyên biệt hơn nếu dùng production.

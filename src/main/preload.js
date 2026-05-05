@@ -89,6 +89,12 @@ contextBridge.exposeInMainWorld('api', {
     global: (query) => ipcRenderer.invoke('search:global', query),
     smart: (query, options) => ipcRenderer.invoke('search:smart', query, options),
     rebuildIndex: () => ipcRenderer.invoke('search:rebuildIndex')
+  },
+
+  // === BACKUP / RESTORE ===
+  backup: {
+    create: () => ipcRenderer.invoke('backup:create'),
+    restore: (filePath) => ipcRenderer.invoke('backup:restore', filePath)
   }
 });
 

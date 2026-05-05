@@ -2,6 +2,7 @@
 const path = require('path');
 const db = require('./database/db');
 const { runMigrations } = require('./database/migrations');
+const { runHardeningMigrations } = require('./database/hardening_migrations');
 
 // Register all IPC handlers
 const unitQueries = require('./database/queries/units');
@@ -14,6 +15,10 @@ const catalogQueries = require('./database/queries/catalogs');
 const fs = require('fs');
 const XLSX = require('xlsx');
 const smartSearch = require('./search/smart_search');
+const validators = require('./validation');
+const { writeAudit } = require('./audit');
+const backupService = require('./backup');
+const { rememberDialogResult, assertAllowedPath } = require('./file_guard');
 
 let mainWindow;
 
@@ -54,6 +59,7 @@ function createWindow() {
 app.whenReady().then(() => {
   // Initialize database
   runMigrations();
+  runHardeningMigrations();
 
   // Register IPC handlers
   registerIpcHandlers();
@@ -76,6 +82,16 @@ app.on('window-all-closed', () => {
 function withSearchRebuild(operation) {
   const result = operation();
   try { smartSearch.rebuild(); } catch (e) { console.error('Smart search rebuild error:', e); }
+  return result;
+}
+
+function withValidatedChange({ moduleName, action, id = null, data = null, validator, getById, operation }) {
+  const before = id && getById ? getById(id) : null;
+  const payload = data && validator ? validator(data) : data;
+  const result = withSearchRebuild(() => operation(payload));
+  const recordId = id || result?.id || null;
+  const after = recordId && getById ? getById(recordId) : result;
+  writeAudit({ module: moduleName, action, recordId, before, after });
   return result;
 }
 
@@ -106,31 +122,31 @@ function registerIpcHandlers() {
   // === WAREHOUSES ===
   ipcMain.handle('warehouses:getAll', () => warehouseQueries.getAll());
   ipcMain.handle('warehouses:getById', (_, id) => warehouseQueries.getById(id));
-  ipcMain.handle('warehouses:create', (_, data) => withSearchRebuild(() => warehouseQueries.create(data)));
-  ipcMain.handle('warehouses:update', (_, id, data) => withSearchRebuild(() => warehouseQueries.update(id, data)));
-  ipcMain.handle('warehouses:delete', (_, id) => withSearchRebuild(() => warehouseQueries.remove(id)));
+  ipcMain.handle('warehouses:create', (_, data) => withValidatedChange({ moduleName: 'warehouses', action: 'create', data, validator: validators.warehouses, getById: warehouseQueries.getById, operation: payload => warehouseQueries.create(payload) }));
+  ipcMain.handle('warehouses:update', (_, id, data) => withValidatedChange({ moduleName: 'warehouses', action: 'update', id, data, validator: validators.warehouses, getById: warehouseQueries.getById, operation: payload => warehouseQueries.update(id, payload) }));
+  ipcMain.handle('warehouses:delete', (_, id) => withValidatedChange({ moduleName: 'warehouses', action: 'delete', id, getById: warehouseQueries.getById, operation: () => warehouseQueries.remove(id) }));
   ipcMain.handle('warehouses:search', (_, query) => warehouseQueries.search(query));
 
   // === CAMERAS ===
   ipcMain.handle('cameras:getAll', () => cameraQueries.getAll());
   ipcMain.handle('cameras:getById', (_, id) => cameraQueries.getById(id));
-  ipcMain.handle('cameras:create', (_, data) => withSearchRebuild(() => cameraQueries.create(data)));
-  ipcMain.handle('cameras:update', (_, id, data) => withSearchRebuild(() => cameraQueries.update(id, data)));
-  ipcMain.handle('cameras:delete', (_, id) => withSearchRebuild(() => cameraQueries.remove(id)));
+  ipcMain.handle('cameras:create', (_, data) => withValidatedChange({ moduleName: 'cameras', action: 'create', data, validator: validators.cameras, getById: cameraQueries.getById, operation: payload => cameraQueries.create(payload) }));
+  ipcMain.handle('cameras:update', (_, id, data) => withValidatedChange({ moduleName: 'cameras', action: 'update', id, data, validator: validators.cameras, getById: cameraQueries.getById, operation: payload => cameraQueries.update(id, payload) }));
+  ipcMain.handle('cameras:delete', (_, id) => withValidatedChange({ moduleName: 'cameras', action: 'delete', id, getById: cameraQueries.getById, operation: () => cameraQueries.remove(id) }));
 
   // === FIRE SYSTEMS ===
   ipcMain.handle('fireSystems:getAll', () => fireSystemQueries.getAll());
   ipcMain.handle('fireSystems:getById', (_, id) => fireSystemQueries.getById(id));
-  ipcMain.handle('fireSystems:create', (_, data) => withSearchRebuild(() => fireSystemQueries.create(data)));
-  ipcMain.handle('fireSystems:update', (_, id, data) => withSearchRebuild(() => fireSystemQueries.update(id, data)));
-  ipcMain.handle('fireSystems:delete', (_, id) => withSearchRebuild(() => fireSystemQueries.remove(id)));
+  ipcMain.handle('fireSystems:create', (_, data) => withValidatedChange({ moduleName: 'fireSystems', action: 'create', data, validator: validators.fireSystems, getById: fireSystemQueries.getById, operation: payload => fireSystemQueries.create(payload) }));
+  ipcMain.handle('fireSystems:update', (_, id, data) => withValidatedChange({ moduleName: 'fireSystems', action: 'update', id, data, validator: validators.fireSystems, getById: fireSystemQueries.getById, operation: payload => fireSystemQueries.update(id, payload) }));
+  ipcMain.handle('fireSystems:delete', (_, id) => withValidatedChange({ moduleName: 'fireSystems', action: 'delete', id, getById: fireSystemQueries.getById, operation: () => fireSystemQueries.remove(id) }));
 
   // === CONSTRUCTIONS ===
   ipcMain.handle('constructions:getAll', () => constructionQueries.getAll());
   ipcMain.handle('constructions:getById', (_, id) => constructionQueries.getById(id));
-  ipcMain.handle('constructions:create', (_, data) => withSearchRebuild(() => constructionQueries.create(data)));
-  ipcMain.handle('constructions:update', (_, id, data) => withSearchRebuild(() => constructionQueries.update(id, data)));
-  ipcMain.handle('constructions:delete', (_, id) => withSearchRebuild(() => constructionQueries.remove(id)));
+  ipcMain.handle('constructions:create', (_, data) => withValidatedChange({ moduleName: 'constructions', action: 'create', data, validator: validators.constructions, getById: constructionQueries.getById, operation: payload => constructionQueries.create(payload) }));
+  ipcMain.handle('constructions:update', (_, id, data) => withValidatedChange({ moduleName: 'constructions', action: 'update', id, data, validator: validators.constructions, getById: constructionQueries.getById, operation: payload => constructionQueries.update(id, payload) }));
+  ipcMain.handle('constructions:delete', (_, id) => withValidatedChange({ moduleName: 'constructions', action: 'delete', id, getById: constructionQueries.getById, operation: () => constructionQueries.remove(id) }));
 
   // === EXCEL IMPORT/EXPORT ===
   ipcMain.handle('dialog:openFile', async (_, filters) => {
@@ -138,7 +154,7 @@ function registerIpcHandlers() {
       properties: ['openFile'],
       filters: filters || [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }]
     });
-    return result;
+    return rememberDialogResult(result);
   });
 
   ipcMain.handle('dialog:saveFile', async (_, defaultName) => {
@@ -146,20 +162,23 @@ function registerIpcHandlers() {
       defaultPath: defaultName,
       filters: [{ name: 'Excel Files', extensions: ['xlsx'] }]
     });
-    return result;
+    return rememberDialogResult(result);
   });
 
   ipcMain.handle('excel:read', (_, filePath) => {
-    const workbook = XLSX.readFile(filePath);
+    const safePath = assertAllowedPath(filePath, ['xlsx', 'xls']);
+    const workbook = XLSX.readFile(safePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
   });
 
   ipcMain.handle('excel:write', (_, filePath, data, sheetName) => {
+    const safePath = assertAllowedPath(filePath, ['xlsx']);
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Data');
-    XLSX.writeFile(wb, filePath);
+    XLSX.writeFile(wb, safePath);
+    writeAudit({ module: 'excel', action: 'export', metadata: { filePath: safePath, sheetName, rows: Array.isArray(data) ? data.length : 0 } });
     return { success: true };
   });
 
@@ -243,5 +262,10 @@ function registerIpcHandlers() {
   ipcMain.handle('search:global', (_, query) => smartSearch.search(query));
   ipcMain.handle('search:smart', (_, query, options) => smartSearch.search(query, options));
   ipcMain.handle('search:rebuildIndex', () => smartSearch.rebuild());
+
+  // === BACKUP / RESTORE ===
+  ipcMain.handle('backup:create', () => backupService.createBackup());
+  ipcMain.handle('backup:restore', (_, filePath) => backupService.restoreBackup(assertAllowedPath(filePath, ['db'])));
 }
+
 

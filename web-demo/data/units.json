@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Vùng 1 Hải quân",
+    "parent_id": null,
+    "level": 0
+  },
+  {
+    "id": 2,
+    "name": "Kho K02",
+    "parent_id": 1,
+    "level": 1
+  },
+  {
+    "id": 3,
+    "name": "Lữ đoàn 147",
+    "parent_id": 1,
+    "level": 1
+  }
+]

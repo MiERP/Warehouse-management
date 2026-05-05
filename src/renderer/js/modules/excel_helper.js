@@ -1,5 +1,8 @@
 ﻿// === EXCEL HELPER ===
 const excelHelper = {
+  escapeCell(value) {
+    return String(value ?? '').replace(/[&<>\"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[ch]));
+  },
   isTechnicalRows(rows) {
     return Array.isArray(rows[0]) && rows[0].some(cell => ['name', 'unit_measure', 'quantity'].includes(String(cell).trim()));
   },
@@ -76,11 +79,11 @@ const excelHelper = {
       const cols = Object.keys(rows[0]);
       let previewHTML = `<p style="color:var(--text-secondary);margin-bottom:12px">Tìm thấy <strong>${rows.length}</strong> dòng dữ liệu</p>`;
       previewHTML += '<div style="max-height:300px;overflow:auto"><table style="width:100%"><thead><tr>';
-      cols.forEach(col => previewHTML += `<th>${col}</th>`);
+      cols.forEach(col => previewHTML += `<th>${this.escapeCell(col)}</th>`);
       previewHTML += '</tr></thead><tbody>';
       rows.slice(0, 5).forEach(row => {
         previewHTML += '<tr>';
-        cols.forEach(col => previewHTML += `<td>${row[col] || ''}</td>`);
+        cols.forEach(col => previewHTML += `<td>${this.escapeCell(row[col] || '')}</td>`);
         previewHTML += '</tr>';
       });
       if (rows.length > 5) previewHTML += `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--text-muted)">... và ${rows.length - 5} dòng khác</td></tr>`;
