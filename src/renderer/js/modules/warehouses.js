@@ -1,31 +1,68 @@
 // === WAREHOUSE MODULE ===
 const warehouseModule = {
   editingId: null,
+  activeFilter: null,
 
-  async loadList() {
-    const items = await window.api.warehouses.getAll();
+  async loadList(filter = this.activeFilter) {
+    this.activeFilter = filter || null;
+    let items = await window.api.warehouses.getAll();
+    if (this.activeFilter?.warehouse_category) items = items.filter(item => item.warehouse_category === this.activeFilter.warehouse_category);
+    if (this.activeFilter?.warehouse_type_id !== undefined) items = items.filter(item => String(item.warehouse_type_id || '') === String(this.activeFilter.warehouse_type_id || ''));
     const tbody = document.getElementById('warehouse-table-body');
+    clearElement(tbody);
     if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Chưa có dữ liệu nhà kho</td></tr>';
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 10;
+      cell.className = 'empty-state';
+      cell.textContent = 'Chưa có dữ liệu nhà kho';
+      row.appendChild(cell);
+      tbody.appendChild(row);
       return;
     }
-    tbody.innerHTML = items.map(w => `
-      <tr onclick="warehouseModule.edit(${w.id})" data-id="${w.id}">
-        <td><strong>${w.name}</strong></td>
-        <td>${w.parent_unit_name || '-'}</td>
-        <td>${w.child_unit_name || '-'}</td>
-        <td>${w.warehouse_category === 'chien_dich' ? '<span class="badge info">Chiến dịch</span>' : w.warehouse_category === 'chien_thuat' ? '<span class="badge success">Chiến thuật</span>' : '-'}</td>
-        <td>${w.province_name || ''}${w.address ? ' - ' + w.address : ''}</td>
-        <td>${w.warehouse_type_name || '-'}</td>
-        <td>${w.quality_grade_name ? '<span class="badge info">' + w.quality_grade_name + '</span>' : '-'}</td>
-        <td>${w.warehouse_area || 0} m²</td>
-        <td>${w.storage_capacity || 0}</td>
-        <td>
-          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();warehouseModule.remove(${w.id})">Xóa</button>
-        </td>
-      </tr>`).join('');
+
+    items.forEach(warehouse => {
+      const row = document.createElement('tr');
+      row.dataset.id = warehouse.id;
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', () => this.edit(warehouse.id));
+
+      const nameCell = appendTextCell(row, warehouse.name);
+      nameCell.style.fontWeight = '600';
+      appendTextCell(row, warehouse.parent_unit_name);
+      appendTextCell(row, warehouse.child_unit_name);
+
+      const categoryCell = document.createElement('td');
+      if (warehouse.warehouse_category === 'chien_dich' || warehouse.warehouse_category === 'chien_thuat') {
+        const badge = document.createElement('span');
+        badge.className = warehouse.warehouse_category === 'chien_dich' ? 'badge info' : 'badge success';
+        badge.textContent = warehouse.warehouse_category === 'chien_dich' ? 'Chiến dịch' : 'Chiến thuật';
+        categoryCell.appendChild(badge);
+      } else {
+        categoryCell.textContent = '-';
+      }
+      row.appendChild(categoryCell);
+
+      appendTextCell(row, [warehouse.province_name, warehouse.address].filter(Boolean).join(' - '));
+      appendTextCell(row, warehouse.warehouse_type_name);
+      appendBadgeCell(row, warehouse.quality_grade_name);
+      appendTextCell(row, `${warehouse.warehouse_area || 0} m²`);
+      appendTextCell(row, warehouse.storage_capacity || 0, '0');
+
+      const actionCell = document.createElement('td');
+      actionCell.appendChild(createButton('Xóa', 'btn btn-sm btn-danger', event => {
+        event.stopPropagation();
+        this.remove(warehouse.id);
+      }));
+      row.appendChild(actionCell);
+      tbody.appendChild(row);
+    });
   },
 
+  openFiltered(filter) {
+    navigateTo('warehouses');
+    setTimeout(() => this.loadList(filter), 100);
+  },
   async showForm(data) {
     const [units, provinces, wtypes, gtypes, qgrades] = await Promise.all([
       window.api.units.getAll(), window.api.locations.getProvinces(),
@@ -42,13 +79,13 @@ const warehouseModule = {
         </div>
         <div class="form-grid">
           <div class="form-section-title">Thông tin chung</div>
-          <div class="form-group"><label class="form-label">Tên kho *</label><input class="form-control" id="wh-name" value="${d.name||''}"></div>
+           <div class="form-group"><label class="form-label">Tên kho *</label><input class="form-control" id="wh-name" value="${escapeHTML(d.name||'')}"></div>
           <div class="form-group"><label class="form-label">Phân loại kho</label><select class="form-control" id="wh-category"><option value="">-- Chọn --</option><option value="chien_dich">Kho chiến dịch</option><option value="chien_thuat">Kho chiến thuật</option></select></div>
           <div class="form-group"><label class="form-label">Đơn vị cha</label><select class="form-control" id="wh-parent-unit">${buildOptions(units)}</select></div>
           <div class="form-group"><label class="form-label">Đơn vị con</label><select class="form-control" id="wh-child-unit">${buildOptions(units)}</select></div>
           <div class="form-group"><label class="form-label">Tỉnh</label><select class="form-control" id="wh-province" onchange="warehouseModule.onProvinceChange()">${buildOptions(provinces)}</select></div>
           <div class="form-group"><label class="form-label">Xã</label><select class="form-control" id="wh-ward"><option>-- Chọn tỉnh trước --</option></select></div>
-          <div class="form-group"><label class="form-label">Địa chỉ chi tiết</label><input class="form-control" id="wh-address" value="${d.address||''}" placeholder="Phường, TP..."></div>
+           <div class="form-group"><label class="form-label">Địa chỉ chi tiết</label><input class="form-control" id="wh-address" value="${escapeHTML(d.address||'')}" placeholder="Phường, TP..."></div>
           <div class="form-group"><label class="form-label">Loại nhà kho</label><select class="form-control" id="wh-type">${buildOptions(wtypes)}</select></div>
 
           <div class="form-section-title">Thông số kỹ thuật</div>
@@ -58,7 +95,7 @@ const warehouseModule = {
           <div class="form-group"><label class="form-label">DT kho chiếm đất (m²)</label><input type="number" class="form-control" id="wh-wh-land-area" value="${d.warehouse_land_area||''}"></div>
           <div class="form-group"><label class="form-label">Năm xây dựng</label><input type="number" class="form-control" id="wh-year-built" value="${d.year_built||''}"></div>
           <div class="form-group"><label class="form-label">Năm sửa/nâng cấp</label><input type="number" class="form-control" id="wh-year-renovated" value="${d.year_renovated||''}"></div>
-          <div class="form-group"><label class="form-label">Khả năng cải tạo</label><input class="form-control" id="wh-renovation" value="${d.renovation_potential||''}" placeholder="km"></div>
+           <div class="form-group"><label class="form-label">Khả năng cải tạo</label><input class="form-control" id="wh-renovation" value="${escapeHTML(d.renovation_potential||'')}" placeholder="km"></div>
           <div class="form-group"><label class="form-label">Trữ lượng dự trữ (tấn)</label><input type="number" class="form-control" id="wh-capacity" value="${d.storage_capacity||''}"></div>
           <div class="form-group"><label class="form-label">Trữ lượng hiện tại (tấn)</label><input type="number" class="form-control" id="wh-stock" value="${d.current_stock||''}"></div>
           <div class="form-group"><label class="form-label">Loại hàng</label><select class="form-control" id="wh-goods">${buildOptions(gtypes)}</select></div>
@@ -77,7 +114,7 @@ const warehouseModule = {
           <div class="form-group"><label class="form-label">Nhu cầu cứu hỏa</label><select class="form-control" id="wh-fire-need"><option value="">-- Chọn --</option><option>Cần thiết</option><option>Không cần</option></select></div>
           <div class="form-group"><label class="form-label">Hiện có cứu hỏa</label><select class="form-control" id="wh-fire-existing"><option value="">-- Chọn --</option><option>Có</option><option>Không</option></select></div>
 
-          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Ghi chú</label><input class="form-control" id="wh-notes" value="${d.notes||''}"></div>
+           <div class="form-group" style="grid-column:1/-1"><label class="form-label">Ghi chú</label><input class="form-control" id="wh-notes" value="${escapeHTML(d.notes||'')}"></div>
         </div>
         <div style="margin-top:var(--space-lg);display:flex;gap:var(--space-sm);justify-content:flex-end">
           <button class="btn btn-secondary" onclick="warehouseModule.hideForm()">Hủy</button>
@@ -100,7 +137,7 @@ const warehouseModule = {
   },
 
   hideForm() {
-    document.getElementById('warehouse-form-container').innerHTML = '';
+    clearElement(document.getElementById('warehouse-form-container'));
     this.editingId = null;
   },
 

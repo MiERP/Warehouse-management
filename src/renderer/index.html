@@ -42,12 +42,33 @@
           <span class="nav-label">Công trình</span>
         </div>
 
+        <div class="nav-item" data-page="documents" id="nav-documents">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span class="nav-label">Tài liệu</span>
+        </div>
+
         <div class="nav-section-label">Hệ thống</div>
         <div class="nav-item" data-page="config" id="nav-config">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
           <span class="nav-label">Cấu hình</span>
         </div>
       </nav>
+
+      <!-- Sidebar User Info -->
+      <div class="sidebar-user" id="sidebar-user">
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">—</div>
+          <div class="sidebar-user-unit" id="sidebar-user-unit">—</div>
+        </div>
+        <button class="sidebar-logout-btn" id="sidebar-logout-btn" title="Đăng xuất">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          <span>Đăng xuất</span>
+        </button>
+      </div>
     </aside>
 
     <!-- MAIN -->
@@ -59,6 +80,25 @@
           <input type="text" placeholder="Tìm kiếm toàn hệ thống..." id="global-search">
           <div class="search-results" id="search-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);max-height:300px;overflow-y:auto;z-index:100;margin-top:4px"></div>
         </div>
+
+        <!-- Theme Toggle -->
+        <button class="header-theme-toggle" id="header-theme-toggle" title="Chuyển đổi giao diện">
+          <svg class="theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg class="theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+        </button>
+
         <div class="header-user" title="Admin">A</div>
       </header>
 
@@ -114,7 +154,7 @@
 
           <!-- Công trình theo năm -->
           <div class="card" style="margin-bottom:var(--space-lg)">
-            <div class="card-header"><h3 class="card-title">Dự án công trình năm <span id="dashboard-current-year"></span></h3></div>
+            <div class="card-header"><h3 class="card-title">Dự án công trình</h3></div>
             <div id="dashboard-constructions" style="padding:var(--space-md)">
               <p style="color:var(--text-muted)">Đang tải...</p>
             </div>
@@ -219,12 +259,29 @@
           <div id="construction-form-container"></div>
           <div class="table-container" style="overflow-x:auto">
             <table><thead><tr>
-              <th>Nội dung</th><th>Loại CT</th><th>Năm HT</th><th>Số QĐ</th>
+              <th>Nội dung</th><th>Loại CT</th><th>Năm BĐ</th><th>Năm HT</th><th>Số QĐ</th>
               <th>Số HĐ</th><th>Nhà thầu</th><th>Trạng thái</th>
               <th>Đầu tư duyệt</th><th>Dự toán</th><th>Giá trị HĐ</th>
               <th>Quyết toán</th><th>Thao tác</th>
             </tr></thead>
             <tbody id="construction-table-body"></tbody></table>
+          </div>
+        </div>
+
+
+
+        <!-- Documents Page -->
+        <div class="page" id="page-documents">
+          <div class="toolbar">
+            <button class="btn btn-primary" onclick="documentsModule.uploadDocument()">Upload tài liệu</button>
+            <input class="form-control" id="documents-search" placeholder="Tìm theo tiêu đề, file, tags..." style="max-width:320px">
+            <button class="btn btn-secondary" onclick="documentsModule.loadList()">Tìm/Làm mới</button>
+          </div>
+          <div id="documents-detail-container"></div>
+          <div class="table-container" style="overflow-x:auto">
+            <table><thead><tr>
+              <th>Tiêu đề</th><th>Loại</th><th>File gốc</th><th>Tags</th><th>Dung lượng</th><th>Liên kết</th><th>Ngày upload</th><th>Thao tác</th>
+            </tr></thead><tbody id="documents-table-body"></tbody></table>
           </div>
         </div>
 
@@ -237,6 +294,8 @@
             <div class="tab-item" data-tab="config-goods-types">Loại hàng</div>
             <div class="tab-item" data-tab="config-quality-grades">Chất lượng</div>
             <div class="tab-item" data-tab="config-lightning">Chống sét</div>
+            <div class="tab-item" data-tab="config-safety">An toàn dữ liệu</div>
+            <div class="tab-item" data-tab="config-duplicates">Rà soát trùng</div>
           </div>
 
           <div class="tab-content active" id="config-units">
@@ -278,6 +337,24 @@
             <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('lightning_protection', 'Chống sét')">Thêm loại</button></div>
             <div class="card"><div id="lightning-list"></div></div>
           </div>
+          <div class="tab-content" id="config-safety">
+            <div class="toolbar">
+              <button class="btn btn-primary" onclick="configModule.createBackup()">Tạo backup</button>
+              <button class="btn btn-secondary" onclick="configModule.restoreBackup()">Restore backup</button>
+              <button class="btn btn-secondary" onclick="configModule.loadSafety()">Làm mới</button>
+            </div>
+            <div class="form-grid-2" style="gap: var(--space-lg);">
+              <div class="card"><div class="card-header"><h3 class="card-title">Lịch sử backup</h3></div><div id="backup-history"></div></div>
+              <div class="card"><div class="card-header"><h3 class="card-title">Migration DB</h3></div><div id="migration-history"></div></div>
+            </div>
+            <div class="card" style="margin-top:var(--space-lg)"><div class="card-header"><h3 class="card-title">Audit log</h3></div><div id="audit-log"></div></div>
+          </div>
+          <div class="tab-content" id="config-duplicates">
+            <div class="toolbar">
+              <button class="btn btn-primary" onclick="configModule.loadDuplicates()">Rà soát dữ liệu nghi trùng</button>
+            </div>
+            <div class="card"><div id="duplicate-review">Bấm nút rà soát để kiểm tra dữ liệu nghi trùng. Hệ thống chỉ gợi ý, không tự xóa.</div></div>
+          </div>
         </div>
       </div>
     </main>
@@ -301,12 +378,20 @@
   <!-- Scripts -->
   <script src="js/mock_api.js"></script>
   <script src="js/modules/charts.js"></script>
+  <script src="../shared/module_registry.js"></script>
   <script src="js/modules/excel_helper.js"></script>
+  <script src="js/core/asset_crud.js"></script>
+  <script src="js/core/document_panel.js"></script>
   <script src="js/app.js"></script>
   <script src="js/modules/config.js"></script>
   <script src="js/modules/warehouses.js"></script>
   <script src="js/modules/cameras.js"></script>
   <script src="js/modules/fire_systems.js"></script>
   <script src="js/modules/constructions.js"></script>
+  <script src="js/modules/documents.js"></script>
 </body>
 </html>
+
+
+
+

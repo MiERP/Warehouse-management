@@ -84,6 +84,51 @@
 }
 
 /* ============================================
+   LIGHT THEME — High Contrast
+   ============================================ */
+[data-theme="light"] {
+  /* Colors - Primary */
+  --color-primary: #1E3A5F;
+  --color-primary-light: #2A5080;
+  --color-primary-dark: #142840;
+  --color-accent: #0096B7;
+  --color-accent-light: #00B4D8;
+  --color-accent-glow: rgba(0, 150, 183, 0.2);
+
+  /* Colors - Semantic */
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-danger: #DC2626;
+  --color-info: #0284C7;
+
+  /* Colors - Background */
+  --bg-app: #F0F2F5;
+  --bg-sidebar: #FFFFFF;
+  --bg-surface: #FFFFFF;
+  --bg-surface-hover: #F7F8FA;
+  --bg-card: #FFFFFF;
+  --bg-input: #F7F8FA;
+  --bg-modal: rgba(0, 0, 0, 0.4);
+
+  /* Colors - Text */
+  --text-primary: #1A1A2E;
+  --text-secondary: #4A5568;
+  --text-muted: #718096;
+  --text-inverse: #FFFFFF;
+
+  /* Colors - Border */
+  --border-color: #E2E8F0;
+  --border-light: #EDF2F7;
+  --border-focus: var(--color-accent);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px var(--color-accent-glow);
+}
+
+/* ============================================
    RESET & BASE
    ============================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

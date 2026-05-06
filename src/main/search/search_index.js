@@ -130,6 +130,25 @@ function getConstructionDocuments() {
   `).all().map(row => createDocument('construction', row));
 }
 
+
+function getDocumentDocuments() {
+  try {
+    return db.prepare(`
+      SELECT d.id, d.title, d.original_name as subtitle,
+        '' as unit_name,
+        d.stored_path as address,
+        d.document_type as status,
+        '' as investor,
+        d.description as notes,
+        TRIM('tai lieu ho so file ' || COALESCE(d.original_name,'') || ' ' || COALESCE(d.tags,'') || ' ' || COALESCE(d.extension,'')) as extra_text
+      FROM documents d
+      WHERE d.deleted_at IS NULL
+    `).all().map(row => createDocument('documents', row));
+  } catch (_) {
+    return [];
+  }
+}
+
 function rebuild() {
   ensureTables();
   db.prepare('DELETE FROM smart_search_fts').run();
@@ -142,7 +161,8 @@ function rebuild() {
     ...getWarehouseDocuments(),
     ...getCameraDocuments(),
     ...getFireDocuments(),
-    ...getConstructionDocuments()
+    ...getConstructionDocuments(),
+    ...getDocumentDocuments()
   ];
 
   const tx = db.transaction(items => items.forEach(item => insert.run(item)));
@@ -151,3 +171,5 @@ function rebuild() {
 }
 
 module.exports = { ensureTables, rebuild };
+
+

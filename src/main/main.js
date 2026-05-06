@@ -2,6 +2,7 @@
 const path = require('path');
 const db = require('./database/db');
 const { runMigrations } = require('./database/migrations');
+const { runHardeningMigrations, listMigrations } = require('./database/hardening_migrations');
 
 // Register all IPC handlers
 const unitQueries = require('./database/queries/units');
@@ -14,10 +15,49 @@ const catalogQueries = require('./database/queries/catalogs');
 const fs = require('fs');
 const XLSX = require('xlsx');
 const smartSearch = require('./search/smart_search');
+const validators = require('./validation');
+const { writeAudit, listAudit } = require('./audit');
+const backupService = require('./backup');
+const duplicateService = require('./duplicates');
+const documentService = require('./documents');
+const { rememberDialogResult, assertAllowedPath } = require('./file_guard');
 
 let mainWindow;
+let loginWindow;
+let currentSession = null;
 
-function createWindow() {
+const DEFAULT_PASSWORD = '123456';
+
+function createLoginWindow() {
+  loginWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 1100,
+    minHeight: 700,
+    frame: true,
+    backgroundColor: '#0F1923',
+    title: 'Đăng nhập — Warehouse Management',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  loginWindow.loadFile(path.join(__dirname, '../renderer/login.html'));
+
+  if (process.argv.includes('--dev')) {
+    loginWindow.webContents.openDevTools();
+  }
+
+  loginWindow.on('closed', () => {
+    loginWindow = null;
+  });
+}
+
+function createWindow(sessionInfo) {
+  currentSession = sessionInfo;
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -39,6 +79,8 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    // Send session info to renderer
+    mainWindow.webContents.send('session:info', sessionInfo);
   });
 
   // Open DevTools in dev mode
@@ -54,6 +96,7 @@ function createWindow() {
 app.whenReady().then(() => {
   // Initialize database
   runMigrations();
+  runHardeningMigrations();
 
   // Register IPC handlers
   registerIpcHandlers();
@@ -61,10 +104,13 @@ app.whenReady().then(() => {
   // Build lightweight smart-search index from current SQLite data
   try { smartSearch.rebuild(); } catch (e) { console.error('Smart search index error:', e); }
 
-  createWindow();
+  // Show login window first
+  createLoginWindow();
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createLoginWindow();
+    }
   });
 });
 
@@ -78,6 +124,41 @@ function withSearchRebuild(operation) {
   try { smartSearch.rebuild(); } catch (e) { console.error('Smart search rebuild error:', e); }
   return result;
 }
+
+function withValidatedChange({ moduleName, action, id = null, data = null, validator, getById, operation }) {
+  const before = id && getById ? getById(id) : null;
+  const payload = data && validator ? validator(data) : data;
+  const result = withSearchRebuild(() => operation(payload));
+  const recordId = id || result?.id || null;
+  const after = recordId && getById ? getById(recordId) : result;
+  writeAudit({ module: moduleName, action, recordId, before, after, metadata: currentSession ? { actor: currentSession.userName, unit: currentSession.unitName } : null });
+  return result;
+}
+
+// === LOGIN IPC ===
+ipcMain.handle('login:authenticate', async (event, sessionInfo) => {
+  const loginWin = BrowserWindow.fromWebContents(event.sender);
+  if (!sessionInfo || !sessionInfo.unitName || !sessionInfo.userName) {
+    throw new Error('Thiếu thông tin đăng nhập');
+  }
+
+  // Close login window and create main window
+  if (loginWin) loginWin.close();
+
+  createWindow(sessionInfo);
+  return { success: true };
+});
+
+// === LOGOUT IPC ===
+ipcMain.handle('app:logout', async () => {
+  currentSession = null;
+  if (mainWindow) {
+    mainWindow.close();
+    mainWindow = null;
+  }
+  createLoginWindow();
+  return { success: true };
+});
 
 function registerIpcHandlers() {
   // === UNITS ===
@@ -106,31 +187,31 @@ function registerIpcHandlers() {
   // === WAREHOUSES ===
   ipcMain.handle('warehouses:getAll', () => warehouseQueries.getAll());
   ipcMain.handle('warehouses:getById', (_, id) => warehouseQueries.getById(id));
-  ipcMain.handle('warehouses:create', (_, data) => withSearchRebuild(() => warehouseQueries.create(data)));
-  ipcMain.handle('warehouses:update', (_, id, data) => withSearchRebuild(() => warehouseQueries.update(id, data)));
-  ipcMain.handle('warehouses:delete', (_, id) => withSearchRebuild(() => warehouseQueries.remove(id)));
+  ipcMain.handle('warehouses:create', (_, data) => withValidatedChange({ moduleName: 'warehouses', action: 'create', data, validator: validators.warehouses, getById: warehouseQueries.getById, operation: payload => warehouseQueries.create(payload) }));
+  ipcMain.handle('warehouses:update', (_, id, data) => withValidatedChange({ moduleName: 'warehouses', action: 'update', id, data, validator: validators.warehouses, getById: warehouseQueries.getById, operation: payload => warehouseQueries.update(id, payload) }));
+  ipcMain.handle('warehouses:delete', (_, id) => withValidatedChange({ moduleName: 'warehouses', action: 'delete', id, getById: warehouseQueries.getById, operation: () => warehouseQueries.remove(id) }));
   ipcMain.handle('warehouses:search', (_, query) => warehouseQueries.search(query));
 
   // === CAMERAS ===
   ipcMain.handle('cameras:getAll', () => cameraQueries.getAll());
   ipcMain.handle('cameras:getById', (_, id) => cameraQueries.getById(id));
-  ipcMain.handle('cameras:create', (_, data) => withSearchRebuild(() => cameraQueries.create(data)));
-  ipcMain.handle('cameras:update', (_, id, data) => withSearchRebuild(() => cameraQueries.update(id, data)));
-  ipcMain.handle('cameras:delete', (_, id) => withSearchRebuild(() => cameraQueries.remove(id)));
+  ipcMain.handle('cameras:create', (_, data) => withValidatedChange({ moduleName: 'cameras', action: 'create', data, validator: validators.cameras, getById: cameraQueries.getById, operation: payload => cameraQueries.create(payload) }));
+  ipcMain.handle('cameras:update', (_, id, data) => withValidatedChange({ moduleName: 'cameras', action: 'update', id, data, validator: validators.cameras, getById: cameraQueries.getById, operation: payload => cameraQueries.update(id, payload) }));
+  ipcMain.handle('cameras:delete', (_, id) => withValidatedChange({ moduleName: 'cameras', action: 'delete', id, getById: cameraQueries.getById, operation: () => cameraQueries.remove(id) }));
 
   // === FIRE SYSTEMS ===
   ipcMain.handle('fireSystems:getAll', () => fireSystemQueries.getAll());
   ipcMain.handle('fireSystems:getById', (_, id) => fireSystemQueries.getById(id));
-  ipcMain.handle('fireSystems:create', (_, data) => withSearchRebuild(() => fireSystemQueries.create(data)));
-  ipcMain.handle('fireSystems:update', (_, id, data) => withSearchRebuild(() => fireSystemQueries.update(id, data)));
-  ipcMain.handle('fireSystems:delete', (_, id) => withSearchRebuild(() => fireSystemQueries.remove(id)));
+  ipcMain.handle('fireSystems:create', (_, data) => withValidatedChange({ moduleName: 'fireSystems', action: 'create', data, validator: validators.fireSystems, getById: fireSystemQueries.getById, operation: payload => fireSystemQueries.create(payload) }));
+  ipcMain.handle('fireSystems:update', (_, id, data) => withValidatedChange({ moduleName: 'fireSystems', action: 'update', id, data, validator: validators.fireSystems, getById: fireSystemQueries.getById, operation: payload => fireSystemQueries.update(id, payload) }));
+  ipcMain.handle('fireSystems:delete', (_, id) => withValidatedChange({ moduleName: 'fireSystems', action: 'delete', id, getById: fireSystemQueries.getById, operation: () => fireSystemQueries.remove(id) }));
 
   // === CONSTRUCTIONS ===
   ipcMain.handle('constructions:getAll', () => constructionQueries.getAll());
   ipcMain.handle('constructions:getById', (_, id) => constructionQueries.getById(id));
-  ipcMain.handle('constructions:create', (_, data) => withSearchRebuild(() => constructionQueries.create(data)));
-  ipcMain.handle('constructions:update', (_, id, data) => withSearchRebuild(() => constructionQueries.update(id, data)));
-  ipcMain.handle('constructions:delete', (_, id) => withSearchRebuild(() => constructionQueries.remove(id)));
+  ipcMain.handle('constructions:create', (_, data) => withValidatedChange({ moduleName: 'constructions', action: 'create', data, validator: validators.constructions, getById: constructionQueries.getById, operation: payload => constructionQueries.create(payload) }));
+  ipcMain.handle('constructions:update', (_, id, data) => withValidatedChange({ moduleName: 'constructions', action: 'update', id, data, validator: validators.constructions, getById: constructionQueries.getById, operation: payload => constructionQueries.update(id, payload) }));
+  ipcMain.handle('constructions:delete', (_, id) => withValidatedChange({ moduleName: 'constructions', action: 'delete', id, getById: constructionQueries.getById, operation: () => constructionQueries.remove(id) }));
 
   // === EXCEL IMPORT/EXPORT ===
   ipcMain.handle('dialog:openFile', async (_, filters) => {
@@ -138,7 +219,7 @@ function registerIpcHandlers() {
       properties: ['openFile'],
       filters: filters || [{ name: 'Excel Files', extensions: ['xlsx', 'xls'] }]
     });
-    return result;
+    return rememberDialogResult(result);
   });
 
   ipcMain.handle('dialog:saveFile', async (_, defaultName) => {
@@ -146,20 +227,33 @@ function registerIpcHandlers() {
       defaultPath: defaultName,
       filters: [{ name: 'Excel Files', extensions: ['xlsx'] }]
     });
-    return result;
+    return rememberDialogResult(result);
   });
 
   ipcMain.handle('excel:read', (_, filePath) => {
-    const workbook = XLSX.readFile(filePath);
+    const safePath = assertAllowedPath(filePath, ['xlsx', 'xls']);
+    const workbook = XLSX.readFile(safePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     return XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
   });
 
+  ipcMain.handle('excel:readWorkbook', (_, filePath) => {
+    const safePath = assertAllowedPath(filePath, ['xlsx', 'xls']);
+    const workbook = XLSX.readFile(safePath);
+    const sheets = {};
+    workbook.SheetNames.forEach(name => {
+      sheets[name] = XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: '' });
+    });
+    return { sheetNames: workbook.SheetNames, sheets };
+  });
+
   ipcMain.handle('excel:write', (_, filePath, data, sheetName) => {
+    const safePath = assertAllowedPath(filePath, ['xlsx']);
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Data');
-    XLSX.writeFile(wb, filePath);
+    XLSX.writeFile(wb, safePath);
+    writeAudit({ module: 'excel', action: 'export', metadata: { filePath: safePath, sheetName, rows: Array.isArray(data) ? data.length : 0 } });
     return { success: true };
   });
 
@@ -179,23 +273,22 @@ function registerIpcHandlers() {
 
     // Danh sách nhà kho theo phân loại kho
     const warehouseByType = db.prepare(`
-      SELECT COALESCE(wt.name, 'Chưa phân loại') as type_name,
+      SELECT wt.id as type_id, COALESCE(wt.name, 'Chưa phân loại') as type_name,
         COUNT(w.id) as count, SUM(w.warehouse_area) as total_area
       FROM warehouses w
       LEFT JOIN warehouse_types wt ON w.warehouse_type_id = wt.id
       GROUP BY wt.id ORDER BY count DESC
     `).all();
 
-    // Công trình theo năm hiện tại
+    // Danh sách công trình cho dashboard: lấy toàn bộ để lọc theo trạng thái/đơn vị/năm/loại tại UI
     const currentYear = new Date().getFullYear();
     const constructionsByYear = db.prepare(`
-      SELECT c.name, c.construction_type, c.status, c.year_completed,
+      SELECT c.id, c.name, c.construction_type, c.status, c.year_started, c.year_completed,
         pu.name as parent_unit_name
       FROM constructions c
       LEFT JOIN units pu ON c.parent_unit_id = pu.id
-      WHERE c.year_started <= ? AND (c.year_completed IS NULL OR c.year_completed >= ?)
       ORDER BY c.name
-    `).all(currentYear, currentYear);
+    `).all();
 
     // Cảnh báo: kho cần sửa chữa/nâng cấp (xây trước 10 năm, chưa sửa)
     const alertYear = currentYear - 10;
@@ -243,5 +336,30 @@ function registerIpcHandlers() {
   ipcMain.handle('search:global', (_, query) => smartSearch.search(query));
   ipcMain.handle('search:smart', (_, query, options) => smartSearch.search(query, options));
   ipcMain.handle('search:rebuildIndex', () => smartSearch.rebuild());
+  ipcMain.handle('system:migrations', () => listMigrations());
+  ipcMain.handle('audit:list', (_, limit) => listAudit(limit));
+  ipcMain.handle('duplicates:review', () => duplicateService.reviewDuplicates());
+
+
+  // === DOCUMENTS ===
+  ipcMain.handle('documents:list', (_, filters) => documentService.listDocuments(filters || {}));
+  ipcMain.handle('documents:getById', (_, id) => documentService.getDocument(id));
+  ipcMain.handle('documents:createFromFile', (_, filePath, metadata) => documentService.createDocumentFromFile(assertAllowedPath(filePath, documentService.ALLOWED_EXTENSIONS), metadata || {}));
+  ipcMain.handle('documents:update', (_, id, metadata) => documentService.updateDocument(id, metadata || {}));
+  ipcMain.handle('documents:delete', (_, id) => documentService.deleteDocument(id));
+  ipcMain.handle('documents:listLinks', (_, documentId) => documentService.listLinks(documentId));
+  ipcMain.handle('documents:listLinkableRecords', (_, entityType, query) => documentService.listLinkableRecords(entityType, query));
+  ipcMain.handle('documents:link', (_, documentId, entityType, entityId, relationType, note) => documentService.linkDocument(documentId, entityType, entityId, relationType, note));
+  ipcMain.handle('documents:unlink', (_, linkId) => documentService.unlinkDocument(linkId));
+  ipcMain.handle('documents:listForEntity', (_, entityType, entityId) => documentService.listDocumentsForEntity(entityType, entityId));
+  ipcMain.handle('documents:open', (_, id) => documentService.openDocument(id));
+  ipcMain.handle('documents:reveal', (_, id) => documentService.revealDocument(id));
+  // === BACKUP / RESTORE ===
+  ipcMain.handle('backup:create', () => backupService.createBackup());
+  ipcMain.handle('backup:list', (_, limit) => backupService.listBackups(limit));
+  ipcMain.handle('backup:restore', (_, filePath) => backupService.restoreBackup(assertAllowedPath(filePath, ['db'])));
 }
+
+
+
 

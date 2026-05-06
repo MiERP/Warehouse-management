@@ -1,3 +1,12 @@
+function cfgEscape(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
+}
+function cfgRows(rows, columns) {
+  if (!rows || rows.length === 0) return '<div style="padding:12px;color:var(--text-muted)">Không có dữ liệu</div>';
+  return `<table style="width:100%"><thead><tr>${columns.map(c => `<th>${cfgEscape(c.label)}</th>`).join('')}</tr></thead><tbody>` +
+    rows.map(row => `<tr>${columns.map(c => `<td>${cfgEscape(typeof c.value === 'function' ? c.value(row) : row[c.value])}</td>`).join('')}</tr>`).join('') +
+    '</tbody></table>';
+}
 // === CONFIG MODULE ===
 const configModule = {
   async loadAll() {
@@ -8,6 +17,25 @@ const configModule = {
   async loadUnits() {
     const tree = await window.api.units.getTree();
     document.getElementById('units-tree').innerHTML = this.renderTree(tree);
+    const unitsTree = document.getElementById('units-tree');
+    if (!unitsTree._delegated) {
+      unitsTree._delegated = true;
+      unitsTree.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.btn-edit-unit');
+        if (editBtn) {
+          const id = parseInt(editBtn.dataset.unitId, 10);
+          const name = editBtn.dataset.unitName;
+          const parentId = editBtn.dataset.unitParent ? parseInt(editBtn.dataset.unitParent, 10) : null;
+          this.editUnit(id, name, parentId);
+          return;
+        }
+        const deleteBtn = e.target.closest('.btn-delete-unit');
+        if (deleteBtn) {
+          this.deleteUnit(parseInt(deleteBtn.dataset.unitId, 10));
+          return;
+        }
+      });
+    }
   },
 
   renderTree(nodes, level = 0) {
@@ -15,12 +43,14 @@ const configModule = {
     let html = level > 0 ? '<ul>' : '';
     nodes.forEach(node => {
       const hasChildren = node.children && node.children.length > 0;
+      const escapedName = cfgEscape(node.name);
+      const escapedParentId = node.parent_id != null ? String(node.parent_id) : '';
       html += `<li>
         <div class="tree-node" data-id="${node.id}">
           <span class="tree-toggle ${hasChildren ? 'expanded' : 'empty'}">▶</span>
-          <span style="flex:1">${node.name}</span>
-          <button class="btn btn-sm btn-secondary" onclick="configModule.editUnit(${node.id},'${node.name.replace(/'/g,"\\'")}',${node.parent_id || 'null'})">Sửa</button>
-          <button class="btn btn-sm btn-danger" onclick="configModule.deleteUnit(${node.id})">Xóa</button>
+          <span style="flex:1">${escapedName}</span>
+          <button class="btn btn-sm btn-secondary btn-edit-unit" data-unit-id="${node.id}" data-unit-name="${escapedName}" data-unit-parent="${escapedParentId}">Sửa</button>
+          <button class="btn btn-sm btn-danger btn-delete-unit" data-unit-id="${node.id}">Xóa</button>
         </div>
         ${hasChildren ? this.renderTree(node.children, level + 1) : ''}
       </li>`;
@@ -52,7 +82,7 @@ const configModule = {
   async editUnit(id, name, parentId) {
     const units = await window.api.units.getAll();
     openModal('Sửa đơn vị', `
-      <div class="form-group"><label class="form-label">Tên đơn vị</label><input class="form-control" id="m-unit-name" value="${name}"></div>
+      <div class="form-group"><label class="form-label">Tên đơn vị</label><input class="form-control" id="m-unit-name" value="${cfgEscape(name)}"></div>
       <div class="form-group" style="margin-top:12px"><label class="form-label">Đơn vị cha</label><select class="form-control" id="m-unit-parent">${buildOptions(units.filter(u => u.id !== id), 'id', 'name', '-- Không có (gốc) --')}</select></div>`,
       `<button class="btn btn-secondary" onclick="closeModal()">Hủy</button>
        <button class="btn btn-primary" onclick="configModule.saveUnit(${id})">Cập nhật</button>`);
@@ -144,14 +174,32 @@ const configModule = {
     const items = await window.api.catalogs.getAll(tableName);
     let html = '<table style="width:100%"><thead><tr><th>Tên</th><th>Mô tả</th><th>Thao tác</th></tr></thead><tbody>';
     items.forEach(item => {
-      html += `<tr><td>${item.name}</td><td style="color:var(--text-muted)">${item.description || ''}</td>
+      const escapedName = cfgEscape(item.name);
+      const escapedDesc = cfgEscape(item.description || '');
+      html += `<tr><td>${escapedName}</td><td style="color:var(--text-muted)">${escapedDesc || ''}</td>
         <td>
-          <button class="btn btn-sm btn-secondary" onclick="configModule.editCatalog('${tableName}',${item.id},'${item.name.replace(/'/g,"\\'")}','${(item.description||'').replace(/'/g,"\\'")}')">Sửa</button>
-          <button class="btn btn-sm btn-danger" onclick="configModule.deleteCatalog('${tableName}',${item.id})">Xóa</button>
+          <button class="btn btn-sm btn-secondary btn-edit-catalog" data-table="${cfgEscape(tableName)}" data-id="${item.id}" data-name="${escapedName}" data-desc="${escapedDesc}">Sửa</button>
+          <button class="btn btn-sm btn-danger btn-delete-catalog" data-table="${cfgEscape(tableName)}" data-id="${item.id}">Xóa</button>
         </td></tr>`;
     });
     html += '</tbody></table>';
-    document.getElementById(containerId).innerHTML = html;
+    const container = document.getElementById(containerId);
+    container.innerHTML = html;
+    if (!container._delegated) {
+      container._delegated = true;
+      container.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.btn-edit-catalog');
+        if (editBtn) {
+          this.editCatalog(editBtn.dataset.table, parseInt(editBtn.dataset.id, 10), editBtn.dataset.name, editBtn.dataset.desc);
+          return;
+        }
+        const deleteBtn = e.target.closest('.btn-delete-catalog');
+        if (deleteBtn) {
+          this.deleteCatalog(deleteBtn.dataset.table, parseInt(deleteBtn.dataset.id, 10));
+          return;
+        }
+      });
+    }
   },
 
   addCatalog(tableName, label) {
@@ -173,10 +221,10 @@ const configModule = {
 
   editCatalog(tableName, id, name, desc) {
     openModal('Sửa danh mục', `
-      <div class="form-group"><label class="form-label">Tên</label><input class="form-control" id="m-cat-name" value="${name}"></div>
-      <div class="form-group" style="margin-top:12px"><label class="form-label">Mô tả</label><input class="form-control" id="m-cat-desc" value="${desc}"></div>`,
+      <div class="form-group"><label class="form-label">Tên</label><input class="form-control" id="m-cat-name" value="${cfgEscape(name)}"></div>
+      <div class="form-group" style="margin-top:12px"><label class="form-label">Mô tả</label><input class="form-control" id="m-cat-desc" value="${cfgEscape(desc)}"></div>`,
       `<button class="btn btn-secondary" onclick="closeModal()">Hủy</button>
-       <button class="btn btn-primary" onclick="configModule.saveCatalog('${tableName}',${id})">Cập nhật</button>`);
+       <button class="btn btn-primary" onclick="configModule.saveCatalog('${cfgEscape(tableName)}',${id})">Cập nhật</button>`);
   },
 
   async deleteCatalog(tableName, id) {
@@ -184,5 +232,77 @@ const configModule = {
     if (!ok) return;
     await window.api.catalogs.delete(tableName, id);
     showToast('Đã xóa', 'success'); this.loadAll();
+  },
+  async loadSafety() {
+    await Promise.all([this.loadBackups(), this.loadAudit(), this.loadMigrations()]);
+  },
+
+  async createBackup() {
+    try {
+      const result = await window.api.backup.create();
+      showToast(`Đã tạo backup: ${result.filePath}`, 'success');
+      await this.loadSafety();
+    } catch (e) { showToast('Lỗi backup: ' + e.message, 'error'); }
+  },
+
+  async restoreBackup() {
+    const result = await window.api.dialog.openFile([{ name: 'SQLite DB', extensions: ['db'] }]);
+    if (result.canceled || !result.filePaths || !result.filePaths[0]) return;
+    const ok = await confirmAction('Restore sẽ thay thế dữ liệu hiện tại. Hệ thống sẽ tự tạo backup an toàn trước khi restore. Tiếp tục?');
+    if (!ok) return;
+    try {
+      const restored = await window.api.backup.restore(result.filePaths[0]);
+      showToast(`Đã restore. Backup an toàn: ${restored.safetyBackup}`, 'success');
+      if (restored.restartRequired) showToast('Restore hoàn tất. Hãy khởi động lại ứng dụng để nạp lại DB.', 'warning');
+    } catch (e) { showToast('Lỗi restore: ' + e.message, 'error'); }
+  },
+
+  async loadBackups() {
+    const rows = await window.api.backup.list(50);
+    document.getElementById('backup-history').innerHTML = cfgRows(rows, [
+      { label: 'Thời điểm', value: 'created_at' },
+      { label: 'Hành động', value: 'action' },
+      { label: 'File', value: 'file_path' }
+    ]);
+  },
+
+  async loadAudit() {
+    const rows = await window.api.audit.list(100);
+    document.getElementById('audit-log').innerHTML = cfgRows(rows, [
+      { label: 'Thời điểm', value: 'created_at' },
+      { label: 'Module', value: 'module' },
+      { label: 'Hành động', value: 'action' },
+      { label: 'Bản ghi', value: row => row.record_id || '' },
+      { label: 'Người dùng', value: 'actor' }
+    ]);
+  },
+
+  async loadMigrations() {
+    const rows = await window.api.system.migrations();
+    document.getElementById('migration-history').innerHTML = cfgRows(rows, [
+      { label: 'Version', value: 'version' },
+      { label: 'Tên migration', value: 'name' },
+      { label: 'Áp dụng lúc', value: 'applied_at' }
+    ]);
+  },
+
+  async loadDuplicates() {
+    const data = await window.api.duplicates.review();
+    const sections = [
+      ['Nhà kho', data.warehouses || []],
+      ['Công trình', data.constructions || []],
+      ['Camera', data.cameras || []],
+      ['Cứu hỏa', data.fireSystems || []]
+    ];
+    const html = sections.map(([label, groups]) => {
+      if (!groups.length) return `<h4 style="margin-top:12px">${cfgEscape(label)}</h4><div style="color:var(--text-muted)">Không phát hiện nghi trùng</div>`;
+      return `<h4 style="margin-top:12px">${cfgEscape(label)}</h4>` + groups.map(group =>
+        `<div style="padding:10px;border-bottom:1px solid var(--border-color)"><div><strong>Khóa:</strong> ${cfgEscape(group.duplicate_key)} — ${group.count} bản ghi</div>` +
+        `<ul style="margin:6px 0 0 18px">${group.records.map(r => `<li>#${cfgEscape(r.id)} — ${cfgEscape(r.title)} <span style="color:var(--text-muted)">${cfgEscape(r.subtitle)}</span></li>`).join('')}</ul></div>`
+      ).join('');
+    }).join('');
+    document.getElementById('duplicate-review').innerHTML = html || 'Không có dữ liệu';
   }
 };
+
+

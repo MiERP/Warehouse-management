@@ -1,138 +1,260 @@
-// === CONSTRUCTIONS MODULE ===
+﻿// === CONSTRUCTIONS MODULE ===
 const constructionModule = {
   editingId: null,
+  activeFilter: null,
 
-  async loadList() {
-    const items = await window.api.constructions.getAll();
+  currency(value) {
+    return value ? new Intl.NumberFormat('vi-VN').format(value) : '-';
+  },
+
+  textInput(grid, id, label, value = '', options = {}) {
+    grid.appendChild(createFormGroup({ id, label, value, type: options.type || 'text', placeholder: options.placeholder || '', full: options.full || false }));
+  },
+
+  selectInput(grid, id, label, value, options) {
+    grid.appendChild(createFormGroup({ id, label, value: value || '', options }));
+  },
+
+  async loadList(filter = this.activeFilter) {
+    this.activeFilter = filter || null;
+    let items = await window.api.constructions.getAll();
+    if (this.activeFilter?.field) {
+      const value = String(this.activeFilter.value || '').toLowerCase();
+      items = items.filter(item => String(item[this.activeFilter.field] || '').toLowerCase().includes(value));
+    }
     const tbody = document.getElementById('construction-table-body');
+    clearElement(tbody);
     if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="12" class="empty-state">Chưa có dữ liệu công trình</td></tr>';
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 13;
+      cell.className = 'empty-state';
+      cell.textContent = 'Chưa có dữ liệu công trình';
+      row.appendChild(cell);
+      tbody.appendChild(row);
       return;
     }
-    tbody.innerHTML = items.map(c => `
-      <tr onclick="constructionModule.edit(${c.id})">
-        <td><strong>${c.name}</strong></td>
-        <td>${c.construction_type || '-'}</td>
-        <td>${c.year_completed || '-'}</td>
-        <td>${c.approval_decision_no || '-'}</td>
-        <td>${c.contract_number || '-'}</td>
-        <td>${c.contractor_name || '-'}</td>
-        <td>${c.status ? '<span class="badge '+(c.status==='Hoàn thành'?'success':c.status==='Đang thi công'?'info':'warning')+'">' + c.status + '</span>' : '-'}</td>
-        <td>${c.approved_investment ? new Intl.NumberFormat('vi-VN').format(c.approved_investment) : '-'}</td>
-        <td>${c.estimated_cost ? new Intl.NumberFormat('vi-VN').format(c.estimated_cost) : '-'}</td>
-        <td>${c.contract_value ? new Intl.NumberFormat('vi-VN').format(c.contract_value) : '-'}</td>
-        <td>${c.settlement_approved ? new Intl.NumberFormat('vi-VN').format(c.settlement_approved) : '-'}</td>
-        <td><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();constructionModule.remove(${c.id})">Xóa</button></td>
-      </tr>`).join('');
+
+    items.forEach(item => {
+      const row = document.createElement('tr');
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', () => this.edit(item.id));
+      const nameCell = appendTextCell(row, item.name);
+      nameCell.style.fontWeight = '600';
+      appendTextCell(row, item.construction_type);
+      appendTextCell(row, item.year_started);
+      appendTextCell(row, item.year_completed);
+      appendTextCell(row, item.approval_decision_no);
+      appendTextCell(row, item.contract_number);
+      appendTextCell(row, item.contractor_name);
+      appendBadgeCell(row, item.status);
+      appendTextCell(row, this.currency(item.approved_investment));
+      appendTextCell(row, this.currency(item.estimated_cost));
+      appendTextCell(row, this.currency(item.contract_value));
+      appendTextCell(row, this.currency(item.settlement_approved));
+      const actionCell = document.createElement('td');
+      actionCell.appendChild(createButton('Xóa', 'btn btn-sm btn-danger', event => {
+        event.stopPropagation();
+        this.remove(item.id);
+      }));
+      row.appendChild(actionCell);
+      tbody.appendChild(row);
+    });
+  },
+
+  openFiltered(filter) {
+    navigateTo('constructions');
+    setTimeout(() => this.loadList(filter), 100);
+  },
+
+  getDefaultStatuses() {
+    return ['Đang thi công', 'Hoàn thành', 'Tạm dừng', 'Chưa triển khai'];
+  },
+
+  async getStatusOptions() {
+    const rows = await window.api.constructions.getAll();
+    const statuses = new Set(this.getDefaultStatuses());
+    rows.forEach(row => { if (row.status) statuses.add(String(row.status).trim()); });
+    return [...statuses].filter(Boolean).sort((a, b) => a.localeCompare(b, 'vi'));
+  },
+
+  statusInput(grid, value) {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.setAttribute('for', 'con-status');
+    label.textContent = 'Trạng thái';
+    const input = document.createElement('input');
+    input.className = 'form-control';
+    input.id = 'con-status';
+    input.setAttribute('list', 'con-status-options');
+    input.value = value || '';
+    input.placeholder = 'Chọn hoặc nhập trạng thái mới';
+    const datalist = document.createElement('datalist');
+    datalist.id = 'con-status-options';
+    this.statusOptions.forEach(status => {
+      const option = document.createElement('option');
+      option.value = status;
+      datalist.appendChild(option);
+    });
+    group.append(label, input, datalist);
+    grid.appendChild(group);
   },
 
   async showForm(data) {
-    const units = await window.api.units.getAll();
-    const d = data || {};
+    const [units, statusOptions] = await Promise.all([window.api.units.getAll(), this.getStatusOptions()]);
+    this.statusOptions = statusOptions;
+    const current = data || {};
+    this.editingId = current.id || null;
     const container = document.getElementById('construction-form-container');
-    container.innerHTML = `
-      <div class="card" style="margin-bottom:var(--space-lg)">
-        <div class="card-header">
-          <h3 class="card-title">${d.id ? 'Sửa công trình' : 'Thêm công trình'}</h3>
-          <button class="btn btn-secondary" onclick="constructionModule.hideForm()">Đóng</button>
-        </div>
-        <div class="form-grid">
-          <div class="form-section-title">Thông tin chung</div>
-          <div class="form-group"><label class="form-label">Nội dung (tên công trình) *</label><input class="form-control" id="con-name" value="${d.name||''}"></div>
-          <div class="form-group"><label class="form-label">Loại công trình</label><select class="form-control" id="con-type"><option value="">-- Chọn --</option><option>SỬA CHỮA, NÂNG CẤP</option><option>LÀM MỚI</option><option>Xây mới</option><option>Cải tạo</option></select></div>
-          <div class="form-group"><label class="form-label">Năm hoàn thành</label><input type="number" class="form-control" id="con-end" value="${d.year_completed||''}"></div>
-          <div class="form-group"><label class="form-label">Đơn vị cha</label><select class="form-control" id="con-parent">${buildOptions(units)}</select></div>
-          <div class="form-group"><label class="form-label">Đơn vị con</label><select class="form-control" id="con-child">${buildOptions(units)}</select></div>
-          <div class="form-group"><label class="form-label">Số QĐ phê duyệt</label><input class="form-control" id="con-approval" value="${d.approval_decision_no||''}"></div>
+    clearElement(container);
 
-          <div class="form-section-title">Thông tin hợp đồng</div>
-          <div class="form-group"><label class="form-label">Số hợp đồng</label><input class="form-control" id="con-contract-no" value="${d.contract_number||''}"></div>
-          <div class="form-group"><label class="form-label">Tên nhà thầu</label><input class="form-control" id="con-contractor" value="${d.contractor_name||''}"></div>
-          <div class="form-group"><label class="form-label">Địa chỉ nhà thầu</label><input class="form-control" id="con-contractor-addr" value="${d.contractor_address||''}"></div>
-          <div class="form-group"><label class="form-label">Mã số thuế</label><input class="form-control" id="con-tax" value="${d.contractor_tax_code||''}"></div>
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginBottom = 'var(--space-lg)';
 
-          <div class="form-section-title">Thẩm tra & Tiến độ</div>
-          <div class="form-group"><label class="form-label">CQ thẩm tra, phản biện</label><input class="form-control" id="con-review" value="${d.review_authority||''}"></div>
-          <div class="form-group"><label class="form-label">Khối lượng</label><input class="form-control" id="con-volume" value="${d.work_volume||''}"></div>
-          <div class="form-group"><label class="form-label">Thời gian bắt đầu</label><input class="form-control" id="con-start-date" value="${d.start_date||''}" placeholder="DD/MM/YYYY"></div>
-          <div class="form-group"><label class="form-label">Thời gian kết thúc</label><input class="form-control" id="con-end-date" value="${d.end_date||''}" placeholder="DD/MM/YYYY"></div>
-          <div class="form-group"><label class="form-label">Trạng thái</label><select class="form-control" id="con-status"><option value="">-- Chọn --</option><option>Đang thi công</option><option>Hoàn thành</option><option>Tạm dừng</option><option>Lập kế hoạch</option></select></div>
+    const header = document.createElement('div');
+    header.className = 'card-header';
+    const title = document.createElement('h3');
+    title.className = 'card-title';
+    title.textContent = current.id ? 'Sửa công trình' : 'Thêm công trình';
+    header.appendChild(title);
+    header.appendChild(createButton('Đóng', 'btn btn-secondary', () => this.hideForm()));
+    card.appendChild(header);
 
-          <div class="form-section-title">Tài chính</div>
-          <div class="form-group"><label class="form-label">Mức đầu tư được duyệt</label><input type="number" class="form-control" id="con-approved-inv" value="${d.approved_investment||''}"></div>
-          <div class="form-group"><label class="form-label">Dự toán</label><input type="number" class="form-control" id="con-estimated" value="${d.estimated_cost||''}"></div>
-          <div class="form-group"><label class="form-label">Giá trị hợp đồng</label><input type="number" class="form-control" id="con-contract-val" value="${d.contract_value||''}"></div>
-          <div class="form-group"><label class="form-label">Quyết toán được duyệt</label><input type="number" class="form-control" id="con-settlement" value="${d.settlement_approved||''}"></div>
-          <div class="form-group"><label class="form-label">Tổng tiền dự toán</label><input type="number" class="form-control" id="con-total-est" value="${d.total_estimated||''}"></div>
-          <div class="form-group"><label class="form-label">SQ phê duyệt quyết toán</label><input class="form-control" id="con-settle-no" value="${d.settlement_decision_no||''}"></div>
-          <div class="form-group"><label class="form-label">Giá trị quyết toán</label><input type="number" class="form-control" id="con-settle-val" value="${d.settlement_value||''}"></div>
-          <div class="form-group"><label class="form-label">Tổng tiền từ đầu tư</label><input type="number" class="form-control" id="con-total-inv" value="${d.total_investment||''}"></div>
-          <div class="form-group"><label class="form-label">Cơ quan đầu tư</label><input class="form-control" id="con-investor" value="${d.investor||''}"></div>
+    const grid = document.createElement('div');
+    grid.className = 'form-grid';
+    appendSectionTitle(grid, 'Thông tin chung');
+    this.textInput(grid, 'con-name', 'Nội dung (tên công trình) *', current.name || '');
+    this.selectInput(grid, 'con-type', 'Loại công trình', current.construction_type, [
+      { value: '', label: '-- Chọn --' }, 'SỬA CHỮA, NÂNG CẤP', 'LÀM MỚI', 'Xây mới', 'Cải tạo'
+    ]);
+    this.textInput(grid, 'con-start', 'Năm bắt đầu', current.year_started || '', { type: 'number' });
+    this.textInput(grid, 'con-end', 'Năm hoàn thành', current.year_completed || '', { type: 'number' });
+    this.selectInput(grid, 'con-parent', 'Đơn vị cha', current.parent_unit_id, unitOptions(units));
+    this.selectInput(grid, 'con-child', 'Đơn vị con', current.child_unit_id, unitOptions(units));
+    this.textInput(grid, 'con-approval', 'Số QĐ phê duyệt', current.approval_decision_no || '');
 
-          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Mô tả</label><input class="form-control" id="con-desc" value="${d.description||''}"></div>
-          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Ghi chú</label><input class="form-control" id="con-notes" value="${d.notes||''}"></div>
-        </div>
-        <div style="margin-top:var(--space-lg);display:flex;gap:var(--space-sm);justify-content:flex-end">
-          <button class="btn btn-secondary" onclick="constructionModule.hideForm()">Hủy</button>
-          <button class="btn btn-primary" onclick="constructionModule.save()">Lưu</button>
-        </div>
-      </div>`;
-    if (d.id) {
-      this.editingId = d.id;
-      if(d.parent_unit_id) document.getElementById('con-parent').value = d.parent_unit_id;
-      if(d.child_unit_id) document.getElementById('con-child').value = d.child_unit_id;
-      if(d.construction_type) document.getElementById('con-type').value = d.construction_type;
-      if(d.status) document.getElementById('con-status').value = d.status;
-    } else { this.editingId = null; }
+    appendSectionTitle(grid, 'Thông tin hợp đồng');
+    this.textInput(grid, 'con-contract-no', 'Số hợp đồng', current.contract_number || '');
+    this.textInput(grid, 'con-contractor', 'Tên nhà thầu', current.contractor_name || '');
+    this.textInput(grid, 'con-contractor-addr', 'Địa chỉ nhà thầu', current.contractor_address || '');
+    this.textInput(grid, 'con-tax', 'Mã số thuế', current.contractor_tax_code || '');
+
+    appendSectionTitle(grid, 'Thẩm tra & Tiến độ');
+    this.textInput(grid, 'con-review', 'CQ thẩm tra, phản biện', current.review_authority || '');
+    this.textInput(grid, 'con-volume', 'Khối lượng', current.work_volume || '');
+    this.textInput(grid, 'con-start-date', 'Thời gian bắt đầu', current.start_date || '', { placeholder: 'DD/MM/YYYY' });
+    this.textInput(grid, 'con-end-date', 'Thời gian kết thúc', current.end_date || '', { placeholder: 'DD/MM/YYYY' });
+    this.statusInput(grid, current.status);
+
+    appendSectionTitle(grid, 'Giá trị đầu tư');
+    this.textInput(grid, 'con-approved-inv', 'Tổng mức đầu tư phê duyệt', current.approved_investment || '', { type: 'number' });
+    this.textInput(grid, 'con-estimated', 'Dự toán', current.estimated_cost || '', { type: 'number' });
+    this.textInput(grid, 'con-contract-val', 'Giá trị hợp đồng', current.contract_value || '', { type: 'number' });
+    this.textInput(grid, 'con-settlement', 'Quyết toán được duyệt', current.settlement_approved || '', { type: 'number' });
+    this.textInput(grid, 'con-total-est', 'Tổng dự toán', current.total_estimated || '', { type: 'number' });
+    this.textInput(grid, 'con-settle-no', 'Số quyết định quyết toán', current.settlement_decision_no || '');
+    this.textInput(grid, 'con-settle-val', 'Giá trị quyết toán', current.settlement_value || '', { type: 'number' });
+    this.textInput(grid, 'con-total-inv', 'Tổng đầu tư', current.total_investment || '', { type: 'number' });
+
+    appendSectionTitle(grid, 'Thông tin bổ sung');
+    this.textInput(grid, 'con-investor', 'Chủ đầu tư', current.investor || '');
+    this.textInput(grid, 'con-desc', 'Mô tả', current.description || '', { full: true });
+    this.textInput(grid, 'con-notes', 'Ghi chú', current.notes || '', { full: true });
+    card.appendChild(grid);
+
+    const footer = document.createElement('div');
+    footer.style.cssText = 'margin-top:var(--space-lg);display:flex;gap:var(--space-sm);justify-content:flex-end';
+    footer.appendChild(createButton('Hủy', 'btn btn-secondary', () => this.hideForm()));
+    footer.appendChild(createButton('Lưu', 'btn btn-primary', () => this.save()));
+    card.appendChild(footer);
+    container.appendChild(card);
+    const documentContainer = document.createElement('div');
+    documentContainer.id = 'construction-document-panel';
+    container.appendChild(documentContainer);
+    if (window.documentPanel) await documentPanel.render(documentContainer, 'constructions', this.editingId);
   },
 
-  hideForm() { document.getElementById('construction-form-container').innerHTML = ''; this.editingId = null; },
+  hideForm() {
+    clearElement(document.getElementById('construction-form-container'));
+    this.editingId = null;
+  },
+
+  value(id) {
+    return document.getElementById(id).value.trim();
+  },
+
+  number(id) {
+    const parsed = parseFloat(document.getElementById(id).value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  },
+
+  nullableInt(id) {
+    const parsed = parseInt(document.getElementById(id).value, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  },
 
   async save() {
-    const name = document.getElementById('con-name').value.trim();
-    if (!name) { showToast('Nhập tên công trình', 'warning'); return; }
     const data = {
-      name,
-      parent_unit_id: parseInt(document.getElementById('con-parent').value) || null,
-      child_unit_id: parseInt(document.getElementById('con-child').value) || null,
-      construction_type: document.getElementById('con-type').value || null,
-      year_started: null,
-      year_completed: parseInt(document.getElementById('con-end').value) || null,
-      status: document.getElementById('con-status').value || null,
+      name: this.value('con-name'),
+      parent_unit_id: this.nullableInt('con-parent'),
+      child_unit_id: this.nullableInt('con-child'),
+      construction_type: this.value('con-type') || null,
+      year_started: this.nullableInt('con-start'),
+      year_completed: this.nullableInt('con-end'),
+      status: this.value('con-status') || null,
       budget: 0,
-      investor: document.getElementById('con-investor').value.trim() || null,
-      description: document.getElementById('con-desc').value.trim() || null,
+      investor: this.value('con-investor') || null,
+      description: this.value('con-desc') || null,
       progress: 0,
-      approval_decision_no: document.getElementById('con-approval').value.trim() || null,
-      contract_number: document.getElementById('con-contract-no').value.trim() || null,
-      contractor_name: document.getElementById('con-contractor').value.trim() || null,
-      contractor_address: document.getElementById('con-contractor-addr').value.trim() || null,
-      contractor_tax_code: document.getElementById('con-tax').value.trim() || null,
-      review_authority: document.getElementById('con-review').value.trim() || null,
-      work_volume: document.getElementById('con-volume').value.trim() || null,
-      start_date: document.getElementById('con-start-date').value.trim() || null,
-      end_date: document.getElementById('con-end-date').value.trim() || null,
-      approved_investment: parseFloat(document.getElementById('con-approved-inv').value) || 0,
-      estimated_cost: parseFloat(document.getElementById('con-estimated').value) || 0,
-      contract_value: parseFloat(document.getElementById('con-contract-val').value) || 0,
-      settlement_approved: parseFloat(document.getElementById('con-settlement').value) || 0,
-      total_estimated: parseFloat(document.getElementById('con-total-est').value) || 0,
-      settlement_decision_no: document.getElementById('con-settle-no').value.trim() || null,
-      settlement_value: parseFloat(document.getElementById('con-settle-val').value) || 0,
-      total_investment: parseFloat(document.getElementById('con-total-inv').value) || 0,
-      notes: document.getElementById('con-notes').value.trim() || null
+      approval_decision_no: this.value('con-approval') || null,
+      contract_number: this.value('con-contract-no') || null,
+      contractor_name: this.value('con-contractor') || null,
+      contractor_address: this.value('con-contractor-addr') || null,
+      contractor_tax_code: this.value('con-tax') || null,
+      review_authority: this.value('con-review') || null,
+      work_volume: this.value('con-volume') || null,
+      start_date: this.value('con-start-date') || null,
+      end_date: this.value('con-end-date') || null,
+      approved_investment: this.number('con-approved-inv'),
+      estimated_cost: this.number('con-estimated'),
+      contract_value: this.number('con-contract-val'),
+      settlement_approved: this.number('con-settlement'),
+      total_estimated: this.number('con-total-est'),
+      settlement_decision_no: this.value('con-settle-no') || null,
+      settlement_value: this.number('con-settle-val'),
+      total_investment: this.number('con-total-inv'),
+      notes: this.value('con-notes') || null
     };
     try {
       if (this.editingId) await window.api.constructions.update(this.editingId, data);
       else await window.api.constructions.create(data);
       showToast(this.editingId ? 'Đã cập nhật' : 'Đã thêm', 'success');
-      this.hideForm(); this.loadList();
-    } catch (e) { showToast('Lỗi: ' + e.message, 'error'); }
+      this.hideForm();
+      await this.loadList();
+    } catch (e) {
+      showToast('Lỗi: ' + e.message, 'error');
+    }
   },
 
-  async edit(id) { const d = await window.api.constructions.getById(id); if (d) this.showForm(d); },
-  async remove(id) { if (await confirmAction('Xóa công trình này?')) { await window.api.constructions.delete(id); showToast('Đã xóa','success'); this.loadList(); } },
-  exportExcel() { excelHelper.exportModule('constructions', 'Cong_trinh'); }
+  async edit(id) {
+    const data = await window.api.constructions.getById(id);
+    if (data) await this.showForm(data);
+  },
+
+  async remove(id) {
+    if (!(await confirmAction('Xóa công trình này?'))) return;
+    await window.api.constructions.delete(id);
+    showToast('Đã xóa', 'success');
+    await this.loadList();
+  },
+
+  exportExcel() {
+    excelHelper.exportModule('constructions', 'Cong_trinh');
+  }
 };
 
 window.constructionModule = constructionModule;
+

@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-05-04T15:18:30.586Z",
+  "actions": [
+    "[22:17:32] Launch Electron bằng Playwright remote automation",
+    "[22:17:34] Nhập tay nhà kho",
+    "[22:17:37] Import nhà kho và export",
+    "[22:17:40] Nhập tay camera, import và export",
+    "[22:17:47] Nhập tay cứu hỏa, import và export",
+    "[22:17:53] Nhập tay công trình, import và export"
+  ],
+  "bugs": [],
+  "exports": [
+    {
+      "path": "D:\\PROJECT\\Agentic-AI\\Warehouse-management\\docs\\export_nha_kho_debug.xlsx",
+      "exists": true,
+      "size": 36854
+    },
+    {
+      "path": "D:\\PROJECT\\Agentic-AI\\Warehouse-management\\docs\\export_camera_debug.xlsx",
+      "exists": true,
+      "size": 23979
+    },
+    {
+      "path": "D:\\PROJECT\\Agentic-AI\\Warehouse-management\\docs\\export_cuuhoa_debug.xlsx",
+      "exists": true,
+      "size": 22794
+    },
+    {
+      "path": "D:\\PROJECT\\Agentic-AI\\Warehouse-management\\docs\\export_congtrinh_debug.xlsx",
+      "exists": true,
+      "size": 41701
+    }
+  ],
+  "video": "D:\\PROJECT\\Agentic-AI\\Warehouse-management\\docs\\debug_import_manual_export.webm"
+}

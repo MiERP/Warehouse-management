@@ -1,5 +1,11 @@
 ﻿const { contextBridge, ipcRenderer } = require('electron');
 
+// === LOGIN API (for login window) ===
+contextBridge.exposeInMainWorld('loginApi', {
+  authenticate: (sessionInfo) => ipcRenderer.invoke('login:authenticate', sessionInfo)
+});
+
+// === MAIN APP API ===
 contextBridge.exposeInMainWorld('api', {
   // === UNITS ===
   units: {
@@ -76,7 +82,8 @@ contextBridge.exposeInMainWorld('api', {
   // === EXCEL ===
   excel: {
     read: (filePath) => ipcRenderer.invoke('excel:read', filePath),
-    write: (filePath, data, sheetName) => ipcRenderer.invoke('excel:write', filePath, data, sheetName)
+    write: (filePath, data, sheetName) => ipcRenderer.invoke('excel:write', filePath, data, sheetName),
+    readWorkbook: (filePath) => ipcRenderer.invoke('excel:readWorkbook', filePath)
   },
 
   // === STATS ===
@@ -89,6 +96,51 @@ contextBridge.exposeInMainWorld('api', {
     global: (query) => ipcRenderer.invoke('search:global', query),
     smart: (query, options) => ipcRenderer.invoke('search:smart', query, options),
     rebuildIndex: () => ipcRenderer.invoke('search:rebuildIndex')
+  },
+
+  // === BACKUP / RESTORE ===
+  backup: {
+    create: () => ipcRenderer.invoke('backup:create'),
+    restore: (filePath) => ipcRenderer.invoke('backup:restore', filePath),
+    list: (limit) => ipcRenderer.invoke('backup:list', limit)
+  },
+
+  audit: {
+    list: (limit) => ipcRenderer.invoke('audit:list', limit)
+  },
+
+  duplicates: {
+    review: () => ipcRenderer.invoke('duplicates:review')
+  },
+
+
+  documents: {
+    list: (filters) => ipcRenderer.invoke('documents:list', filters),
+    getById: (id) => ipcRenderer.invoke('documents:getById', id),
+    createFromFile: (filePath, metadata) => ipcRenderer.invoke('documents:createFromFile', filePath, metadata),
+    update: (id, metadata) => ipcRenderer.invoke('documents:update', id, metadata),
+    delete: (id) => ipcRenderer.invoke('documents:delete', id),
+    listLinks: (documentId) => ipcRenderer.invoke('documents:listLinks', documentId),
+    listLinkableRecords: (entityType, query) => ipcRenderer.invoke('documents:listLinkableRecords', entityType, query),
+    link: (documentId, entityType, entityId, relationType, note) => ipcRenderer.invoke('documents:link', documentId, entityType, entityId, relationType, note),
+    unlink: (linkId) => ipcRenderer.invoke('documents:unlink', linkId),
+    listForEntity: (entityType, entityId) => ipcRenderer.invoke('documents:listForEntity', entityType, entityId),
+    open: (id) => ipcRenderer.invoke('documents:open', id),
+    reveal: (id) => ipcRenderer.invoke('documents:reveal', id)
+  },
+  system: {
+    migrations: () => ipcRenderer.invoke('system:migrations')
   }
 });
+
+// === SESSION INFO (for main window) ===
+contextBridge.exposeInMainWorld('sessionApi', {
+  onInfo: (callback) => ipcRenderer.on('session:info', (_, info) => callback(info))
+});
+
+// === APP CONTROL (for main window) ===
+contextBridge.exposeInMainWorld('appApi', {
+  logout: () => ipcRenderer.invoke('app:logout')
+});
+
 

@@ -182,3 +182,119 @@ Phiên bản hiện tại là **Electron desktop app**, không thể chạy nguy
 - Bổ sung cấu hình dictionary từ file ngoài hoặc màn hình quản trị.
 - Dọn dữ liệu trùng do test/import nhiều lần.
 - Xây dựng bản web demo nếu cần gửi khách hàng qua link `.github.io`.
+
+## Production Hardening (`hardening/v0.2`)
+
+Dự án đã có mốc rollback an toàn trước khi nâng cấp production:
+
+```bash
+git checkout v0.1.0-mvp
+```
+
+Nhánh phát triển hardening:
+
+```bash
+git checkout hardening/v0.2
+```
+
+Các nâng cấp trong nhánh này:
+
+- Validation tại main process cho Nhà kho, Camera, Cứu hỏa và Công trình.
+- Audit log cho thao tác tạo/sửa/xóa/export/backup.
+- Backup/restore IPC API và lịch sử backup.
+- Schema migration tracking bằng bảng `schema_migrations`.
+- File guard cho Excel import/export: chỉ đọc/ghi đường dẫn đã chọn qua dialog của ứng dụng.
+- Import Excel có escape HTML và báo cáo lỗi dòng import.
+- Test smoke tổng hợp cho Electron, Smart Search, mở record, validation, index sync và backup.
+
+### Lệnh kiểm tra
+
+```bash
+npm run check
+npm run test:search
+npm run test:smoke
+npm test
+```
+
+### Báo cáo liên quan
+
+- `docs/production_hardening_plan.md`
+- `docs/production_hardening_report.md`
+- `docs/hardening_smoke_report.json`
+
+### Lưu ý production còn lại
+
+- Chưa có auth/session thật cho nhiều người dùng.
+- Renderer vẫn còn một số vùng legacy dùng `innerHTML`; cần tiếp tục thay bằng safe rendering.
+- Backup/restore API đã có nhưng cần UI quản trị hoàn chỉnh.
+- Migration tracking đã có nhưng legacy migrations chưa tách hết thành từng version file.
+- Mapping Excel template chính thức cho `KHO.xls` và `CONG-TRINH.xlsx` cần parser chuyên biệt hơn nếu dùng production.
+
+## Hardening v0.2
+
+Bản nâng cấp hardening bổ sung các chức năng nền để bảo vệ dữ liệu và kiểm thử hệ thống:
+
+- Migration runner có version theo từng bước, theo dõi trong `schema_migrations`.
+- Tab Cấu hình có khu vực An toàn dữ liệu để tạo backup, restore và xem audit log.
+- Import Excel đọc workbook nhiều sheet, có parser nền cho mẫu `KHO.xls` và `CONG-TRINH.xlsx`, preview dòng hợp lệ/lỗi.
+- Màn Rà soát dữ liệu nghi trùng chỉ gợi ý nhóm nghi trùng, không tự xóa dữ liệu.
+- Smart Search render kết quả bằng DOM event listener thay cho inline `onclick`.
+- Smoke test mở rộng kiểm tra search, validation, backup, audit, migration, duplicate review và parser import.
+
+Chạy kiểm tra:
+
+```bash
+npm test
+```
+
+Báo cáo đánh giá: `docs/hardening_v0_2_evaluation.md`.
+
+## Product Completion
+
+Giai đoạn hoàn thiện sản phẩm hiện bám theo tài liệu gốc `docs/mota.md`, ưu tiên đúng phạm vi ban đầu thay vì thêm công nghệ mới:
+
+- Phạm vi sản phẩm chính thức: `docs/product_scope.md`.
+- Đối chiếu khoảng cách theo mô tả ban đầu: `docs/mota_gap_analysis.md`.
+- Registry nghiệp vụ dùng làm nguồn chuẩn cho module/field/list/search/import: `src/shared/module_registry.js`.
+- Test đã được gom vào `tests/`, script tạo dữ liệu/demo gom vào `scripts/`, artifact QA gom vào `docs/qa/`.
+
+Nguyên tắc phát triển tiếp: mọi trường nghiệp vụ mới phải được khai báo trong registry trước, sau đó mới nối vào form, import/export, search và test.
+
+### Renderer Consolidation
+
+Hai module `cameras` và `fire_systems` đã được gom về core CRUD dùng chung tại `src/renderer/js/core/asset_crud.js`. Mục tiêu là giảm lặp code renderer nhưng vẫn giữ nguyên nghiệp vụ, API và UI flow hiện có.
+
+## Product Completion 2026-05-06
+
+Đã hoàn thiện một vòng consolidation theo `docs/mota.md`:
+
+- Scope sản phẩm: `docs/product_scope.md`.
+- Gap analysis: `docs/mota_gap_analysis.md`.
+- Báo cáo hoàn thiện: `docs/product_completion_report.md`.
+- Registry nghiệp vụ: `src/shared/module_registry.js`.
+- CRUD renderer core: `src/renderer/js/core/asset_crud.js`.
+- `cameras`, `fire_systems`, `constructions` đã giảm mạnh render HTML rời rạc.
+- `warehouses` đã an toàn hơn ở phần danh sách; form giữ nguyên để tránh rủi ro với tỉnh/xã/danh mục.
+
+## Module Quản lý tài liệu
+
+Đã bổ sung thiết kế module tài liệu tập trung:
+
+- Thiết kế nghiệp vụ/schema/UI: `docs/document_management_module.md`.
+- Kế hoạch triển khai mã nguồn: `docs/document_management_implementation_plan.md`.
+- Kế hoạch test hệ thống: `docs/document_management_test_plan.md`.
+
+Định hướng: tài liệu là bản ghi độc lập, file lưu trong kho tài liệu hệ thống, SQLite chỉ lưu metadata và liên kết hai chiều với các record nghiệp vụ.
+
+### Document Management Implementation
+
+Đã triển khai module Quản lý tài liệu tập trung:
+
+- Backend service: `src/main/documents.js`.
+- DB migration: `005_document_management` trong `src/main/database/hardening_migrations.js`.
+- UI module: `src/renderer/js/modules/documents.js`.
+- Panel dùng chung: `src/renderer/js/core/document_panel.js`.
+- Test: `tests/test_documents_service.js`.
+- Báo cáo: `docs/document_management_implementation_report.md`.
+
+File tài liệu được copy vào kho tài liệu của hệ thống, SQLite chỉ lưu metadata và liên kết.
