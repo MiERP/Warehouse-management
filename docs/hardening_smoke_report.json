@@ -1,0 +1,601 @@
+{
+  "timestamp": "2026-05-06T08:45:44.670Z",
+  "checks": [
+    {
+      "name": "smart search returns camera results",
+      "ok": true,
+      "detail": {
+        "top": {
+          "module": "camera",
+          "id": 14,
+          "record_id": 14,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "Đã sửa chữa",
+          "score": 198,
+          "matched_reason": [
+            "camera",
+            "hong",
+            "sua",
+            "chua",
+            "đúng phân hệ"
+          ]
+        }
+      }
+    },
+    {
+      "name": "search result opens record form",
+      "ok": true,
+      "detail": {
+        "formName": "Kho Xăng dầu K02"
+      }
+    },
+    {
+      "name": "validation rejects invalid warehouse",
+      "ok": true,
+      "detail": {
+        "validationMessage": "Error invoking remote method 'warehouses:create': Error: Tên kho là bắt buộc; DT nhà kho không được âm; Năm xây dựng phải nằm trong khoảng 1900-2027"
+      }
+    },
+    {
+      "name": "search index syncs after create",
+      "ok": true,
+      "detail": {
+        "created": {
+          "id": 41,
+          "unit_measure": "Hệ thống",
+          "quantity": 1,
+          "camera_count": 1,
+          "status": "SmokeSync1778057145578",
+          "notes": "SmokeSync1778057145578",
+          "parent_unit_id": null,
+          "child_unit_id": null,
+          "year_installed": null,
+          "year_repaired": null,
+          "screen_count": 0,
+          "investor": null,
+          "repair_need": 0,
+          "new_install_need": 0
+        },
+        "synced": {
+          "module": "camera",
+          "id": 41,
+          "record_id": 41,
+          "title": "Hệ thống camera",
+          "subtitle": "",
+          "status": "SmokeSync1778057145578",
+          "score": 176,
+          "matched_reason": [
+            "smokesync1778057145578"
+          ]
+        }
+      }
+    },
+    {
+      "name": "backup file created",
+      "ok": true,
+      "detail": {
+        "success": true,
+        "filePath": "C:\\Users\\Admin\\AppData\\Roaming\\warehouse-management\\backups\\warehouse-2026-05-06T08-45-45-604Z.db"
+      }
+    },
+    {
+      "name": "numbered migrations are tracked",
+      "ok": true,
+      "detail": {
+        "migrations": [
+          {
+            "version": 1,
+            "name": "initial_schema",
+            "applied_at": "2026-05-05 16:20:42"
+          },
+          {
+            "version": 2,
+            "name": "smart_search",
+            "applied_at": "2026-05-05 16:20:42"
+          },
+          {
+            "version": 3,
+            "name": "audit_backup_hardening",
+            "applied_at": "2026-05-05 16:20:42"
+          },
+          {
+            "version": 4,
+            "name": "004_duplicate_review_views",
+            "applied_at": "2026-05-06 02:06:11"
+          },
+          {
+            "version": 5,
+            "name": "005_document_management",
+            "applied_at": "2026-05-06 03:24:36"
+          }
+        ]
+      }
+    },
+    {
+      "name": "backup history is listed",
+      "ok": true,
+      "detail": {
+        "backups": [
+          {
+            "id": 18,
+            "file_path": "C:\\Users\\Admin\\AppData\\Roaming\\warehouse-management\\backups\\warehouse-2026-05-06T08-45-45-604Z.db",
+            "action": "backup",
+            "created_at": "2026-05-06 08:45:45"
+          },
+          {
+            "id": 17,
+            "file_path": "C:\\Users\\Admin\\AppData\\Roaming\\warehouse-management\\backups\\warehouse-2026-05-06T05-58-08-142Z.db",
+            "action": "backup",
+            "created_at": "2026-05-06 05:58:08"
+          }
+        ]
+      }
+    },
+    {
+      "name": "audit log is listed",
+      "ok": true,
+      "detail": {
+        "audits": [
+          {
+            "id": 64,
+            "module": "system",
+            "action": "backup",
+            "record_id": null,
+            "actor": "admin",
+            "created_at": "2026-05-06 08:45:45",
+            "before_json": null,
+            "after_json": null,
+            "metadata_json": "{\"outputPath\":\"C:\\\\Users\\\\Admin\\\\AppData\\\\Roaming\\\\warehouse-management\\\\backups\\\\warehouse-2026-05-06T08-45-45-604Z.db\"}"
+          },
+          {
+            "id": 63,
+            "module": "cameras",
+            "action": "delete",
+            "record_id": 41,
+            "actor": "admin",
+            "created_at": "2026-05-06 08:45:45",
+            "before_json": "{\"id\":41,\"parent_unit_id\":null,\"child_unit_id\":null,\"unit_measure\":\"Hệ thống\",\"quantity\":1,\"year_installed\":null,\"year_repaired\":null,\"screen_count\":0,\"camera_count\":1,\"investor\":null,\"status\":\"SmokeSync1778057145578\",\"repair_need\":0,\"new_install_need\":0,\"notes\":\"SmokeSync1778057145578\",\"created_at\":\"2026-05-06 08:45:45\",\"updated_at\":\"2026-05-06 08:45:45\"}",
+            "after_json": null,
+            "metadata_json": null
+          },
+          {
+            "id": 62,
+            "module": "cameras",
+            "action": "create",
+            "record_id": 41,
+            "actor": "admin",
+            "created_at": "2026-05-06 08:45:45",
+            "before_json": null,
+            "after_json": "{\"id\":41,\"parent_unit_id\":null,\"child_unit_id\":null,\"unit_measure\":\"Hệ thống\",\"quantity\":1,\"year_installed\":null,\"year_repaired\":null,\"screen_count\":0,\"camera_count\":1,\"investor\":null,\"status\":\"SmokeSync1778057145578\",\"repair_need\":0,\"new_install_need\":0,\"notes\":\"SmokeSync1778057145578\",\"created_at\":\"2026-05-06 08:45:45\",\"updated_at\":\"2026-05-06 08:45:45\"}",
+            "metadata_json": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate review API returns sections",
+      "ok": true,
+      "detail": {
+        "warehouses": [
+          {
+            "duplicate_key": "kho lương thực k03",
+            "count": 4,
+            "records": [
+              {
+                "id": 14,
+                "title": "Kho Lương thực K03",
+                "subtitle": "Xã Hải An, Huyện Thủy Nguyên, Hải Phòng"
+              },
+              {
+                "id": 18,
+                "title": "Kho Lương thực K03",
+                "subtitle": "Xã Hải An, Huyện Thủy Nguyên, Hải Phòng"
+              },
+              {
+                "id": 22,
+                "title": "Kho Lương thực K03",
+                "subtitle": "Xã Hải An, Huyện Thủy Nguyên, Hải Phòng"
+              },
+              {
+                "id": 26,
+                "title": "Kho Lương thực K03",
+                "subtitle": "Xã Hải An, Huyện Thủy Nguyên, Hải Phòng"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "kho nhập tay debug 01",
+            "count": 4,
+            "records": [
+              {
+                "id": 11,
+                "title": "Kho nhập tay Debug 01",
+                "subtitle": "Số 10 Nguyễn Trãi, Hà Nội"
+              },
+              {
+                "id": 15,
+                "title": "Kho nhập tay Debug 01",
+                "subtitle": "Số 10 Nguyễn Trãi, Hà Nội"
+              },
+              {
+                "id": 19,
+                "title": "Kho nhập tay Debug 01",
+                "subtitle": "Số 10 Nguyễn Trãi, Hà Nội"
+              },
+              {
+                "id": 23,
+                "title": "Kho nhập tay Debug 01",
+                "subtitle": "Số 10 Nguyễn Trãi, Hà Nội"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "kho vktb tổng hợp 01",
+            "count": 4,
+            "records": [
+              {
+                "id": 12,
+                "title": "Kho VKTB Tổng hợp 01",
+                "subtitle": "Phường Bạch Đằng, TP Hải Phòng"
+              },
+              {
+                "id": 16,
+                "title": "Kho VKTB Tổng hợp 01",
+                "subtitle": "Phường Bạch Đằng, TP Hải Phòng"
+              },
+              {
+                "id": 20,
+                "title": "Kho VKTB Tổng hợp 01",
+                "subtitle": "Phường Bạch Đằng, TP Hải Phòng"
+              },
+              {
+                "id": 24,
+                "title": "Kho VKTB Tổng hợp 01",
+                "subtitle": "Phường Bạch Đằng, TP Hải Phòng"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "kho xăng dầu k02",
+            "count": 4,
+            "records": [
+              {
+                "id": 13,
+                "title": "Kho Xăng dầu K02",
+                "subtitle": "Phường Hà Tu, TP Hạ Long, Quảng Ninh"
+              },
+              {
+                "id": 17,
+                "title": "Kho Xăng dầu K02",
+                "subtitle": "Phường Hà Tu, TP Hạ Long, Quảng Ninh"
+              },
+              {
+                "id": 21,
+                "title": "Kho Xăng dầu K02",
+                "subtitle": "Phường Hà Tu, TP Hạ Long, Quảng Ninh"
+              },
+              {
+                "id": 25,
+                "title": "Kho Xăng dầu K02",
+                "subtitle": "Phường Hà Tu, TP Hạ Long, Quảng Ninh"
+              }
+            ]
+          }
+        ],
+        "constructions": [
+          {
+            "duplicate_key": "chi phí giám sát thi công xây dựng (gói thầu số 03)",
+            "count": 4,
+            "records": [
+              {
+                "id": 4,
+                "title": "Chi phí giám sát thi công xây dựng (Gói thầu số 03)",
+                "subtitle": "Đang thi công"
+              },
+              {
+                "id": 9,
+                "title": "Chi phí giám sát thi công xây dựng (Gói thầu số 03)",
+                "subtitle": "Đang thi công"
+              },
+              {
+                "id": 13,
+                "title": "Chi phí giám sát thi công xây dựng (Gói thầu số 03)",
+                "subtitle": "Đang thi công"
+              },
+              {
+                "id": 18,
+                "title": "Chi phí giám sát thi công xây dựng (Gói thầu số 03)",
+                "subtitle": "Đang thi công"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "chi phí lập báo cáo kinh tế - kỹ thuật (tv-02)",
+            "count": 3,
+            "records": [
+              {
+                "id": 3,
+                "title": "Chi phí lập báo cáo kinh tế - kỹ thuật (TV-02)",
+                "subtitle": "Đang thi công"
+              },
+              {
+                "id": 8,
+                "title": "Chi phí lập báo cáo kinh tế - kỹ thuật (TV-02)",
+                "subtitle": "Đang thi công"
+              },
+              {
+                "id": 17,
+                "title": "Chi phí lập báo cáo kinh tế - kỹ thuật (TV-02)",
+                "subtitle": "Đang thi công"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "chi phí tư vấn lập hsyc, đánh giá hsĐx; thẩm tra dự toán, thiết kế bản vẽ thi công (tv-01)",
+            "count": 2,
+            "records": [
+              {
+                "id": 2,
+                "title": "Chi phí tư vấn lập HSYC, đánh giá HSĐX; thẩm tra dự toán, thiết kế bản vẽ thi công (TV-01)",
+                "subtitle": "Đang thi công"
+              },
+              {
+                "id": 7,
+                "title": "Chi phí tư vấn lập HSYC, đánh giá HSĐX; thẩm tra dự toán, thiết kế bản vẽ thi công (TV-01)",
+                "subtitle": "Đang thi công"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "công trình nhập tay debug 01",
+            "count": 2,
+            "records": [
+              {
+                "id": 21,
+                "title": "Công trình nhập tay Debug 01",
+                "subtitle": ""
+              },
+              {
+                "id": 24,
+                "title": "Công trình nhập tay Debug 01",
+                "subtitle": ""
+              }
+            ]
+          },
+          {
+            "duplicate_key": "sửa chữa, nâng cấp kho vktb k01",
+            "count": 2,
+            "records": [
+              {
+                "id": 22,
+                "title": "Sửa chữa, nâng cấp Kho VKTB K01",
+                "subtitle": "Đang thi công"
+              },
+              {
+                "id": 25,
+                "title": "Sửa chữa, nâng cấp Kho VKTB K01",
+                "subtitle": "Đang thi công"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "xây mới nhà kho lương thực k03",
+            "count": 2,
+            "records": [
+              {
+                "id": 23,
+                "title": "Xây mới nhà kho lương thực K03",
+                "subtitle": "Đang thi công"
+              },
+              {
+                "id": 26,
+                "title": "Xây mới nhà kho lương thực K03",
+                "subtitle": "Đang thi công"
+              }
+            ]
+          }
+        ],
+        "cameras": [
+          {
+            "duplicate_key": "-1:2024",
+            "count": 6,
+            "records": [
+              {
+                "id": 2,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 3,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 11,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Mới lắp đặt"
+              },
+              {
+                "id": 15,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Mới lắp đặt"
+              },
+              {
+                "id": 16,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 17,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "-1:2022",
+            "count": 3,
+            "records": [
+              {
+                "id": 9,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 13,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 18,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Màn hình bình thường, 05 CAM hỏng, 10 CAM bình thường"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "-1:2020",
+            "count": 2,
+            "records": [
+              {
+                "id": 10,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Đã sửa chữa"
+              },
+              {
+                "id": 14,
+                "title": "Camera chưa gắn đơn vị",
+                "subtitle": "Đã sửa chữa"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "5:2024",
+            "count": 2,
+            "records": [
+              {
+                "id": 8,
+                "title": "Vùng 1 Hải quân",
+                "subtitle": "Hoạt động tốt"
+              },
+              {
+                "id": 12,
+                "title": "Vùng 1 Hải quân",
+                "subtitle": "Hoạt động tốt"
+              }
+            ]
+          }
+        ],
+        "fireSystems": [
+          {
+            "duplicate_key": "-1:2024",
+            "count": 4,
+            "records": [
+              {
+                "id": 2,
+                "title": "Cứu hỏa chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 3,
+                "title": "Cứu hỏa chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 13,
+                "title": "Cứu hỏa chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 14,
+                "title": "Cứu hỏa chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "-1:2019",
+            "count": 3,
+            "records": [
+              {
+                "id": 8,
+                "title": "Cứu hỏa chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 11,
+                "title": "Cứu hỏa chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 16,
+                "title": "Cứu hỏa chưa gắn đơn vị",
+                "subtitle": ""
+              }
+            ]
+          },
+          {
+            "duplicate_key": "-1:2021",
+            "count": 2,
+            "records": [
+              {
+                "id": 9,
+                "title": "Cứu hỏa chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              },
+              {
+                "id": 12,
+                "title": "Cứu hỏa chưa gắn đơn vị",
+                "subtitle": "Hoạt động bình thường"
+              }
+            ]
+          },
+          {
+            "duplicate_key": "5:2023",
+            "count": 2,
+            "records": [
+              {
+                "id": 7,
+                "title": "Vùng 1 Hải quân",
+                "subtitle": "Sẵn sàng"
+              },
+              {
+                "id": 10,
+                "title": "Vùng 1 Hải quân",
+                "subtitle": "Sẵn sàng"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "KHO parser reads warehouse template rows",
+      "ok": true,
+      "detail": {
+        "name": "Kho test <script>",
+        "address": "Địa chỉ",
+        "warehouse_category": "chien_thuat",
+        "quantity": 1,
+        "land_area": 100,
+        "warehouse_area": 50,
+        "year_built": 2020,
+        "year_renovated": 2024,
+        "storage_capacity": 200,
+        "current_stock": 20,
+        "quality_grade_4_area": 0,
+        "lightning_existing_count": 0,
+        "notes": "Ghi chú",
+        "_sourceRow": 11
+      }
+    },
+    {
+      "name": "no renderer runtime errors",
+      "ok": true,
+      "detail": {
+        "errors": []
+      }
+    }
+  ]
+}

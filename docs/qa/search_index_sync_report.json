@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-05-05T16:03:52.064Z",
+  "token": "SearchSync1777997032017",
+  "count": 1,
+  "top": {
+    "module": "camera",
+    "id": 21,
+    "record_id": 21,
+    "title": "Hệ thống camera",
+    "subtitle": "",
+    "status": "Camera test SearchSync1777997032017",
+    "score": 175,
+    "matched_reason": [
+      "searchsync1777997032017"
+    ]
+  }
+}

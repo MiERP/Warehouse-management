@@ -1,0 +1,64 @@
+{
+  "warehouse_types": [
+    {
+      "id": 1,
+      "name": "Kho kín"
+    },
+    {
+      "id": 2,
+      "name": "Kho hở"
+    }
+  ],
+  "goods_types": [
+    {
+      "id": 1,
+      "name": "Xăng dầu"
+    },
+    {
+      "id": 2,
+      "name": "Lương thực"
+    }
+  ],
+  "quality_grades": [
+    {
+      "id": 1,
+      "name": "Cấp 2,3"
+    },
+    {
+      "id": 2,
+      "name": "Cấp 4"
+    }
+  ],
+  "lightning_protection": [
+    {
+      "id": 1,
+      "name": "Có"
+    },
+    {
+      "id": 2,
+      "name": "Không"
+    }
+  ],
+  "provinces": [
+    {
+      "id": 1,
+      "name": "Hải Phòng"
+    },
+    {
+      "id": 2,
+      "name": "Quảng Ninh"
+    }
+  ],
+  "wards": [
+    {
+      "id": 1,
+      "name": "Bạch Đằng",
+      "province_id": 1
+    },
+    {
+      "id": 2,
+      "name": "Hà Tu",
+      "province_id": 2
+    }
+  ]
+}

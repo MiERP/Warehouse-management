@@ -1,0 +1,30 @@
+[
+  {
+    "unit_measure": "Hệ thống",
+    "quantity": 1,
+    "year_installed": 2019,
+    "year_repaired": 2023,
+    "pump_house_count": 2,
+    "hydrant_count": 8,
+    "investor": "Cục HC-KT",
+    "status": "Hoạt động bình thường",
+    "repair_need": 0,
+    "new_install_need": 0,
+    "notes": "Hệ thống cứu hỏa tập trung kho K01",
+    "id": 1
+  },
+  {
+    "unit_measure": "Hệ thống",
+    "quantity": 1,
+    "year_installed": 2021,
+    "year_repaired": null,
+    "pump_house_count": 1,
+    "hydrant_count": 6,
+    "investor": "Phòng HC-KT Vùng",
+    "status": "Hoạt động bình thường",
+    "repair_need": 1,
+    "new_install_need": 0,
+    "notes": "Cần bảo trì định kỳ",
+    "id": 2
+  }
+]

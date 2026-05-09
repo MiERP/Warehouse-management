@@ -1,0 +1,34 @@
+{
+  "dbPath": "C:\\Users\\Admin\\AppData\\Roaming\\Electron\\warehouse.db",
+  "backupPath": "C:\\Users\\Admin\\AppData\\Roaming\\Electron\\warehouse.backup-before-dedupe-2026-05-05T16-02-19-853Z.db",
+  "results": [
+    {
+      "table": "warehouses",
+      "before": 9,
+      "after": 9,
+      "removed": 0,
+      "duplicateGroups": 0
+    },
+    {
+      "table": "cameras",
+      "before": 6,
+      "after": 6,
+      "removed": 0,
+      "duplicateGroups": 0
+    },
+    {
+      "table": "fire_systems",
+      "before": 6,
+      "after": 6,
+      "removed": 0,
+      "duplicateGroups": 0
+    },
+    {
+      "table": "constructions",
+      "before": 20,
+      "after": 20,
+      "removed": 0,
+      "duplicateGroups": 0
+    }
+  ]
+}
