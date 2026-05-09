@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const db = require('./database/db');
 const { runMigrations } = require('./database/migrations');
@@ -27,6 +27,27 @@ let loginWindow;
 let currentSession = null;
 
 const DEFAULT_PASSWORD = '123456';
+const LICENSE_KEY = '20260731'; // YYYYMMDD - han su dung den ngay nay
+
+function parseLicenseKey(key) {
+  if (!key || key.length !== 8 || !/^\d{8}$/.test(key)) return null;
+  const year = parseInt(key.slice(0, 4), 10);
+  const month = parseInt(key.slice(4, 6), 10) - 1;
+  const day = parseInt(key.slice(6, 8), 10);
+  const expiry = new Date(year, month, day);
+  if (expiry.getFullYear() !== year || expiry.getMonth() !== month || expiry.getDate() !== day) return null;
+  return expiry;
+}
+
+function checkLicense() {
+  const expiry = parseLicenseKey(LICENSE_KEY);
+  if (!expiry) return { valid: false, daysLeft: 0, reason: 'License key khong hop le' };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysLeft = Math.ceil((expiry - today) / 86400000);
+  if (daysLeft < 0) return { valid: false, daysLeft, reason: 'License da het han ngay ' + expiry.toLocaleDateString('vi-VN') };
+  return { valid: true, daysLeft };
+}
 
 function createLoginWindow() {
   loginWindow = new BrowserWindow({
@@ -36,7 +57,7 @@ function createLoginWindow() {
     minHeight: 700,
     frame: true,
     backgroundColor: '#0F1923',
-    title: 'Đăng nhập — Warehouse Management',
+    title: '�ang nh?p � Warehouse Management',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -139,7 +160,13 @@ function withValidatedChange({ moduleName, action, id = null, data = null, valid
 ipcMain.handle('login:authenticate', async (event, sessionInfo) => {
   const loginWin = BrowserWindow.fromWebContents(event.sender);
   if (!sessionInfo || !sessionInfo.unitName || !sessionInfo.userName) {
-    throw new Error('Thiếu thông tin đăng nhập');
+    throw new Error('Thi?u th�ng tin dang nh?p');
+  }
+
+  // License check on server side
+  const license = checkLicense();
+  if (!license.valid) {
+    throw new Error(license.reason || 'License da het han hoac khong hop le');
   }
 
   // Close login window and create main window
@@ -257,7 +284,7 @@ function registerIpcHandlers() {
     return { success: true };
   });
 
-  // === STATS (Dashboard — redesigned) ===
+  // === STATS (Dashboard � redesigned) ===
   ipcMain.handle('stats:overview', () => {
     // Count by warehouse category
     const catData = db.prepare(`
@@ -271,16 +298,16 @@ function registerIpcHandlers() {
     const fc = db.prepare('SELECT COUNT(*) as count FROM fire_systems').get();
     const wc = db.prepare('SELECT COUNT(*) as count FROM warehouses').get();
 
-    // Danh sách nhà kho theo phân loại kho
+    // Danh s�ch nh� kho theo ph�n lo?i kho
     const warehouseByType = db.prepare(`
-      SELECT wt.id as type_id, COALESCE(wt.name, 'Chưa phân loại') as type_name,
+      SELECT wt.id as type_id, COALESCE(wt.name, 'Chua ph�n lo?i') as type_name,
         COUNT(w.id) as count, SUM(w.warehouse_area) as total_area
       FROM warehouses w
       LEFT JOIN warehouse_types wt ON w.warehouse_type_id = wt.id
       GROUP BY wt.id ORDER BY count DESC
     `).all();
 
-    // Danh sách công trình cho dashboard: lấy toàn bộ để lọc theo trạng thái/đơn vị/năm/loại tại UI
+    // Danh s�ch c�ng tr�nh cho dashboard: l?y to�n b? d? l?c theo tr?ng th�i/don v?/nam/lo?i t?i UI
     const currentYear = new Date().getFullYear();
     const constructionsByYear = db.prepare(`
       SELECT c.id, c.name, c.construction_type, c.status, c.year_started, c.year_completed,
@@ -290,7 +317,7 @@ function registerIpcHandlers() {
       ORDER BY c.name
     `).all();
 
-    // Cảnh báo: kho cần sửa chữa/nâng cấp (xây trước 10 năm, chưa sửa)
+    // C?nh b�o: kho c?n s?a ch?a/n�ng c?p (x�y tru?c 10 nam, chua s?a)
     const alertYear = currentYear - 10;
     const alerts = db.prepare(`
       SELECT w.name, w.year_built, w.year_renovated,
