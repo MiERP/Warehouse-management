@@ -2,10 +2,36 @@ function cfgEscape(value) {
   return String(value ?? '').replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
 }
 function cfgRows(rows, columns) {
-  if (!rows || rows.length === 0) return '<div style="padding:12px;color:var(--text-muted)">Không có dữ liệu</div>';
-  return `<table style="width:100%"><thead><tr>${columns.map(c => `<th>${cfgEscape(c.label)}</th>`).join('')}</tr></thead><tbody>` +
-    rows.map(row => `<tr>${columns.map(c => `<td>${cfgEscape(typeof c.value === 'function' ? c.value(row) : row[c.value])}</td>`).join('')}</tr>`).join('') +
-    '</tbody></table>';
+  if (!rows || rows.length === 0) {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:12px;color:var(--text-muted)';
+    div.textContent = 'Không có dữ liệu';
+    return div;
+  }
+  const table = document.createElement('table');
+  table.style.width = '100%';
+  const thead = document.createElement('thead');
+  const tr = document.createElement('tr');
+  columns.forEach(c => {
+    const th = document.createElement('th');
+    th.textContent = c.label;
+    tr.appendChild(th);
+  });
+  thead.appendChild(tr);
+  table.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    columns.forEach(c => {
+      const td = document.createElement('td');
+      const val = typeof c.value === 'function' ? c.value(row) : row[c.value];
+      td.textContent = val != null ? String(val) : '';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  return table;
 }
 // === CONFIG MODULE ===
 const configModule = {
@@ -16,7 +42,10 @@ const configModule = {
   // === UNITS (Tree) ===
   async loadUnits() {
     const tree = await window.api.units.getTree();
-    document.getElementById('units-tree').innerHTML = this.renderTree(tree);
+    
+    const unitsTreeEl = document.getElementById('units-tree');
+    while (unitsTreeEl.firstChild) unitsTreeEl.removeChild(unitsTreeEl.firstChild);
+    unitsTreeEl.appendChild(this.renderTree(tree));
     const unitsTree = document.getElementById('units-tree');
     if (!unitsTree._delegated) {
       unitsTree._delegated = true;
@@ -39,24 +68,48 @@ const configModule = {
   },
 
   renderTree(nodes, level = 0) {
-    if (!nodes || nodes.length === 0) return '';
-    let html = level > 0 ? '<ul>' : '';
+    if (!nodes || nodes.length === 0) {
+      return document.createDocumentFragment();
+    }
+    const wrapper = document.createElement(level > 0 ? 'ul' : 'div');
     nodes.forEach(node => {
       const hasChildren = node.children && node.children.length > 0;
-      const escapedName = cfgEscape(node.name);
-      const escapedParentId = node.parent_id != null ? String(node.parent_id) : '';
-      html += `<li>
-        <div class="tree-node" data-id="${node.id}">
-          <span class="tree-toggle ${hasChildren ? 'expanded' : 'empty'}">▶</span>
-          <span style="flex:1">${escapedName}</span>
-          <button class="btn btn-sm btn-secondary btn-edit-unit" data-unit-id="${node.id}" data-unit-name="${escapedName}" data-unit-parent="${escapedParentId}">Sửa</button>
-          <button class="btn btn-sm btn-danger btn-delete-unit" data-unit-id="${node.id}">Xóa</button>
-        </div>
-        ${hasChildren ? this.renderTree(node.children, level + 1) : ''}
-      </li>`;
+      const li = document.createElement('li');
+      const div = document.createElement('div');
+      div.className = 'tree-node';
+      div.setAttribute('data-id', String(node.id));
+
+      const toggle = document.createElement('span');
+      toggle.className = 'tree-toggle ' + (hasChildren ? 'expanded' : 'empty');
+      toggle.textContent = '▶';
+      div.appendChild(toggle);
+
+      const nameSpan = document.createElement('span');
+      nameSpan.style.flex = '1';
+      nameSpan.textContent = node.name || '';
+      div.appendChild(nameSpan);
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-sm btn-secondary btn-edit-unit';
+      editBtn.setAttribute('data-unit-id', String(node.id));
+      editBtn.setAttribute('data-unit-name', node.name || '');
+      editBtn.setAttribute('data-unit-parent', node.parent_id != null ? String(node.parent_id) : '');
+      editBtn.textContent = 'Sửa';
+      div.appendChild(editBtn);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn btn-sm btn-danger btn-delete-unit';
+      deleteBtn.setAttribute('data-unit-id', String(node.id));
+      deleteBtn.textContent = 'Xóa';
+      div.appendChild(deleteBtn);
+
+      li.appendChild(div);
+      if (hasChildren) {
+        li.appendChild(this.renderTree(node.children, level + 1));
+      }
+      wrapper.appendChild(li);
     });
-    html += level > 0 ? '</ul>' : '';
-    return html;
+    return wrapper;
   },
 
   async addUnit() {
@@ -106,7 +159,9 @@ const configModule = {
         <td><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();configModule.deleteProvince(${p.id})">Xóa</button></td></tr>`;
     });
     html += '</tbody></table>';
-    document.getElementById('provinces-list').innerHTML = html;
+    const provList = document.getElementById('provinces-list');
+    while (provList.firstChild) provList.removeChild(provList.firstChild);
+    provList.appendChild(html);
   },
 
   async loadWards(provinceId) {
@@ -117,7 +172,9 @@ const configModule = {
         <td><button class="btn btn-sm btn-danger" onclick="configModule.deleteWard(${w.id})">Xóa</button></td></tr>`;
     });
     html += '</tbody></table>';
-    document.getElementById('wards-list').innerHTML = html;
+    const wardsList = document.getElementById('wards-list');
+    while (wardsList.firstChild) wardsList.removeChild(wardsList.firstChild);
+    wardsList.appendChild(html);
   },
 
   addProvince() {
@@ -184,7 +241,8 @@ const configModule = {
     });
     html += '</tbody></table>';
     const container = document.getElementById(containerId);
-    container.innerHTML = html;
+    while (container.firstChild) container.removeChild(container.firstChild);
+    container.appendChild(html);
     if (!container._delegated) {
       container._delegated = true;
       container.addEventListener('click', (e) => {
@@ -259,31 +317,31 @@ const configModule = {
 
   async loadBackups() {
     const rows = await window.api.backup.list(50);
-    document.getElementById('backup-history').innerHTML = cfgRows(rows, [
+    const bhEl = document.getElementById('backup-history'); while (bhEl.firstChild) bhEl.removeChild(bhEl.firstChild); bhEl.appendChild(cfgRows(rows, [
       { label: 'Thời điểm', value: 'created_at' },
       { label: 'Hành động', value: 'action' },
       { label: 'File', value: 'file_path' }
-    ]);
+    ]));
   },
 
   async loadAudit() {
     const rows = await window.api.audit.list(100);
-    document.getElementById('audit-log').innerHTML = cfgRows(rows, [
+    const alEl = document.getElementById('audit-log'); while (alEl.firstChild) alEl.removeChild(alEl.firstChild); alEl.appendChild(cfgRows(rows, [
       { label: 'Thời điểm', value: 'created_at' },
       { label: 'Module', value: 'module' },
       { label: 'Hành động', value: 'action' },
       { label: 'Bản ghi', value: row => row.record_id || '' },
       { label: 'Người dùng', value: 'actor' }
-    ]);
+    ]));
   },
 
   async loadMigrations() {
     const rows = await window.api.system.migrations();
-    document.getElementById('migration-history').innerHTML = cfgRows(rows, [
+    const mhEl = document.getElementById('migration-history'); while (mhEl.firstChild) mhEl.removeChild(mhEl.firstChild); mhEl.appendChild(cfgRows(rows, [
       { label: 'Version', value: 'version' },
       { label: 'Tên migration', value: 'name' },
       { label: 'Áp dụng lúc', value: 'applied_at' }
-    ]);
+    ]));
   },
 
   async loadDuplicates() {
@@ -301,7 +359,9 @@ const configModule = {
         `<ul style="margin:6px 0 0 18px">${group.records.map(r => `<li>#${cfgEscape(r.id)} — ${cfgEscape(r.title)} <span style="color:var(--text-muted)">${cfgEscape(r.subtitle)}</span></li>`).join('')}</ul></div>`
       ).join('');
     }).join('');
-    document.getElementById('duplicate-review').innerHTML = html || 'Không có dữ liệu';
+    const drEl = document.getElementById('duplicate-review');
+    while (drEl.firstChild) drEl.removeChild(drEl.firstChild);
+    drEl.appendChild(html);
   }
 };
 

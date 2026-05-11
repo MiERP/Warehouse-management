@@ -1,4 +1,4 @@
-﻿// === DOCUMENTS MODULE ===
+// === DOCUMENTS MODULE ===
 const documentsModule = {
   currentId: null,
 
@@ -166,9 +166,11 @@ const documentsModule = {
     info.style.cssText = 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px';
     [['File', doc.original_name], ['Loại', doc.document_type || '-'], ['Tags', doc.tags || '-'], ['Dung lượng', this.formatSize(doc.size_bytes)], ['Đường dẫn', doc.stored_path]].forEach(([label, value]) => {
       const item = document.createElement('div');
-      item.innerHTML = `<strong></strong><div></div>`;
-      item.querySelector('strong').textContent = label;
-      item.querySelector('div').textContent = value;
+      const strong = document.createElement('strong');
+      strong.textContent = label;
+      const div = document.createElement('div');
+      div.textContent = value;
+      item.append(strong, div);
       info.appendChild(item);
     });
     card.appendChild(info);

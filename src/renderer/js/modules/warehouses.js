@@ -72,56 +72,127 @@ const warehouseModule = {
     const d = data || {};
     this.editingId = d.id || null;
     const container = document.getElementById('warehouse-form-container');
-    container.innerHTML = `
-      <div class="card" style="margin-bottom:var(--space-lg)">
-        <div class="card-header">
-          <h3 class="card-title">${d.id ? 'Sửa nhà kho' : 'Thêm nhà kho mới'}</h3>
-          <button class="btn btn-secondary" onclick="warehouseModule.hideForm()">Đóng</button>
-        </div>
-        <div class="form-grid">
-          <div class="form-section-title">Thông tin chung</div>
-           <div class="form-group"><label class="form-label">Tên kho *</label><input class="form-control" id="wh-name" value="${escapeHTML(d.name||'')}"></div>
-          <div class="form-group"><label class="form-label">Phân loại kho</label><select class="form-control" id="wh-category"><option value="">-- Chọn --</option><option value="chien_dich">Kho chiến dịch</option><option value="chien_thuat">Kho chiến thuật</option></select></div>
-          <div class="form-group"><label class="form-label">Đơn vị cha</label><select class="form-control" id="wh-parent-unit">${buildOptions(units)}</select></div>
-          <div class="form-group"><label class="form-label">Đơn vị con</label><select class="form-control" id="wh-child-unit">${buildOptions(units)}</select></div>
-          <div class="form-group"><label class="form-label">Tỉnh</label><select class="form-control" id="wh-province" onchange="warehouseModule.onProvinceChange()">${buildOptions(provinces)}</select></div>
-          <div class="form-group"><label class="form-label">Xã</label><select class="form-control" id="wh-ward"><option>-- Chọn tỉnh trước --</option></select></div>
-           <div class="form-group"><label class="form-label">Địa chỉ chi tiết</label><input class="form-control" id="wh-address" value="${escapeHTML(d.address||'')}" placeholder="Phường, TP..."></div>
-          <div class="form-group"><label class="form-label">Loại nhà kho</label><select class="form-control" id="wh-type">${buildOptions(wtypes)}</select></div>
+    clearElement(container);
 
-          <div class="form-section-title">Thông số kỹ thuật</div>
-          <div class="form-group"><label class="form-label">Số nhà kho</label><input type="number" class="form-control" id="wh-quantity" value="${d.quantity||''}"></div>
-          <div class="form-group"><label class="form-label">DT chiếm đất (m²)</label><input type="number" class="form-control" id="wh-land-area" value="${d.land_area||''}"></div>
-          <div class="form-group"><label class="form-label">DT nhà kho (m²)</label><input type="number" class="form-control" id="wh-area" value="${d.warehouse_area||''}"></div>
-          <div class="form-group"><label class="form-label">DT kho chiếm đất (m²)</label><input type="number" class="form-control" id="wh-wh-land-area" value="${d.warehouse_land_area||''}"></div>
-          <div class="form-group"><label class="form-label">Năm xây dựng</label><input type="number" class="form-control" id="wh-year-built" value="${d.year_built||''}"></div>
-          <div class="form-group"><label class="form-label">Năm sửa/nâng cấp</label><input type="number" class="form-control" id="wh-year-renovated" value="${d.year_renovated||''}"></div>
-           <div class="form-group"><label class="form-label">Khả năng cải tạo</label><input class="form-control" id="wh-renovation" value="${escapeHTML(d.renovation_potential||'')}" placeholder="km"></div>
-          <div class="form-group"><label class="form-label">Trữ lượng dự trữ (tấn)</label><input type="number" class="form-control" id="wh-capacity" value="${d.storage_capacity||''}"></div>
-          <div class="form-group"><label class="form-label">Trữ lượng hiện tại (tấn)</label><input type="number" class="form-control" id="wh-stock" value="${d.current_stock||''}"></div>
-          <div class="form-group"><label class="form-label">Loại hàng</label><select class="form-control" id="wh-goods">${buildOptions(gtypes)}</select></div>
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginBottom = 'var(--space-lg)';
 
-          <div class="form-section-title">Phân cấp chất lượng nhà kho</div>
-          <div class="form-group"><label class="form-label">Xếp loại chung</label><select class="form-control" id="wh-quality">${buildOptions(qgrades)}</select></div>
-          <div class="form-group"><label class="form-label">DT Cấp 2,3 (m²)</label><input type="number" class="form-control" id="wh-q23" value="${d.quality_grade_23_area||''}"></div>
-          <div class="form-group"><label class="form-label">DT Cấp 4 (m²)</label><input type="number" class="form-control" id="wh-q4" value="${d.quality_grade_4_area||''}"></div>
-          <div class="form-group"><label class="form-label">Nhà tạm (m²)</label><input type="number" class="form-control" id="wh-temp" value="${d.temp_house_area||''}"></div>
+    const cardHeader = document.createElement('div');
+    cardHeader.className = 'card-header';
+    const title = document.createElement('h3');
+    title.className = 'card-title';
+    title.textContent = d.id ? 'Sửa nhà kho' : 'Thêm nhà kho mới';
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'btn btn-secondary';
+    closeBtn.textContent = 'Đóng';
+    closeBtn.addEventListener('click', () => warehouseModule.hideForm());
+    cardHeader.append(title, closeBtn);
+    card.appendChild(cardHeader);
 
-          <div class="form-section-title">Hệ thống chống sét</div>
-          <div class="form-group"><label class="form-label">Nhà cấp (m²)</label><input type="number" class="form-control" id="wh-lightning-area" value="${d.lightning_grade_area||''}"></div>
-          <div class="form-group"><label class="form-label">Hiện có (cái)</label><input type="number" class="form-control" id="wh-lightning-count" value="${d.lightning_existing_count||''}"></div>
+    const formGrid = document.createElement('div');
+    formGrid.className = 'form-grid';
 
-          <div class="form-section-title">Hệ thống cứu hỏa</div>
-          <div class="form-group"><label class="form-label">Nhu cầu cứu hỏa</label><select class="form-control" id="wh-fire-need"><option value="">-- Chọn --</option><option>Cần thiết</option><option>Không cần</option></select></div>
-          <div class="form-group"><label class="form-label">Hiện có cứu hỏa</label><select class="form-control" id="wh-fire-existing"><option value="">-- Chọn --</option><option>Có</option><option>Không</option></select></div>
+    // Section: Thông tin chung
+    const secInfo = document.createElement('div');
+    secInfo.className = 'form-section-title';
+    secInfo.textContent = 'Thông tin chung';
+    formGrid.appendChild(secInfo);
+    formGrid.appendChild(this._createFormField('wh-name', 'Tên kho *', 'input', d.name || ''));
+    formGrid.appendChild(this._createSelectField('wh-category', 'Phân loại kho', [
+      { value: '', text: '-- Chọn --' },
+      { value: 'chien_dich', text: 'Kho chiến dịch' },
+      { value: 'chien_thuat', text: 'Kho chiến thuật' }
+    ]));
+    formGrid.appendChild(this._createSelectField('wh-parent-unit', 'Đơn vị cha', this._buildOptions(units)));
+    formGrid.appendChild(this._createSelectField('wh-child-unit', 'Đơn vị con', this._buildOptions(units)));
+    const provinceField = this._createSelectField('wh-province', 'Tỉnh', this._buildOptions(provinces));
+    provinceField.querySelector('select').addEventListener('change', () => warehouseModule.onProvinceChange());
+    formGrid.appendChild(provinceField);
+    formGrid.appendChild(this._createSelectField('wh-ward', 'Xã', [{ value: '', text: '-- Chọn tỉnh trước --' }]));
+    formGrid.appendChild(this._createFormField('wh-address', 'Địa chỉ chi tiết', 'input', d.address || '', 'Phường, TP...'));
+    formGrid.appendChild(this._createSelectField('wh-type', 'Loại nhà kho', this._buildOptions(wtypes)));
 
-           <div class="form-group" style="grid-column:1/-1"><label class="form-label">Ghi chú</label><input class="form-control" id="wh-notes" value="${escapeHTML(d.notes||'')}"></div>
-        </div>
-        <div style="margin-top:var(--space-lg);display:flex;gap:var(--space-sm);justify-content:flex-end">
-          <button class="btn btn-secondary" onclick="warehouseModule.hideForm()">Hủy</button>
-          <button class="btn btn-primary" onclick="warehouseModule.save()">Lưu</button>
-        </div>
-      </div>`;
+    // Section: Thông số kỹ thuật
+    const secTech = document.createElement('div');
+    secTech.className = 'form-section-title';
+    secTech.textContent = 'Thông số kỹ thuật';
+    formGrid.appendChild(secTech);
+    formGrid.appendChild(this._createFormField('wh-quantity', 'Số nhà kho', 'number', d.quantity || ''));
+    formGrid.appendChild(this._createFormField('wh-land-area', 'DT chiếm đất (m²)', 'number', d.land_area || ''));
+    formGrid.appendChild(this._createFormField('wh-area', 'DT nhà kho (m²)', 'number', d.warehouse_area || ''));
+    formGrid.appendChild(this._createFormField('wh-wh-land-area', 'DT kho chiếm đất (m²)', 'number', d.warehouse_land_area || ''));
+    formGrid.appendChild(this._createFormField('wh-year-built', 'Năm xây dựng', 'number', d.year_built || ''));
+    formGrid.appendChild(this._createFormField('wh-year-renovated', 'Năm sửa/nâng cấp', 'number', d.year_renovated || ''));
+    formGrid.appendChild(this._createFormField('wh-renovation', 'Khả năng cải tạo', 'input', d.renovation_potential || '', 'km'));
+    formGrid.appendChild(this._createFormField('wh-capacity', 'Trữ lượng dự trữ (tấn)', 'number', d.storage_capacity || ''));
+    formGrid.appendChild(this._createFormField('wh-stock', 'Trữ lượng hiện tại (tấn)', 'number', d.current_stock || ''));
+    formGrid.appendChild(this._createSelectField('wh-goods', 'Loại hàng', this._buildOptions(gtypes)));
+
+    // Section: Phân cấp chất lượng
+    const secQuality = document.createElement('div');
+    secQuality.className = 'form-section-title';
+    secQuality.textContent = 'Phân cấp chất lượng nhà kho';
+    formGrid.appendChild(secQuality);
+    formGrid.appendChild(this._createSelectField('wh-quality', 'Xếp loại chung', this._buildOptions(qgrades)));
+    formGrid.appendChild(this._createFormField('wh-q23', 'DT Cấp 2,3 (m²)', 'number', d.quality_grade_23_area || ''));
+    formGrid.appendChild(this._createFormField('wh-q4', 'DT Cấp 4 (m²)', 'number', d.quality_grade_4_area || ''));
+    formGrid.appendChild(this._createFormField('wh-temp', 'Nhà tạm (m²)', 'number', d.temp_house_area || ''));
+
+    // Section: Hệ thống chống sét
+    const secLightning = document.createElement('div');
+    secLightning.className = 'form-section-title';
+    secLightning.textContent = 'Hệ thống chống sét';
+    formGrid.appendChild(secLightning);
+    formGrid.appendChild(this._createFormField('wh-lightning-area', 'Nhà cấp (m²)', 'number', d.lightning_grade_area || ''));
+    formGrid.appendChild(this._createFormField('wh-lightning-count', 'Hiện có (cái)', 'number', d.lightning_existing_count || ''));
+
+    // Section: Hệ thống cứu hỏa
+    const secFire = document.createElement('div');
+    secFire.className = 'form-section-title';
+    secFire.textContent = 'Hệ thống cứu hỏa';
+    formGrid.appendChild(secFire);
+    formGrid.appendChild(this._createSelectField('wh-fire-need', 'Nhu cầu cứu hỏa', [
+      { value: '', text: '-- Chọn --' },
+      { value: 'Cần thiết', text: 'Cần thiết' },
+      { value: 'Không cần', text: 'Không cần' }
+    ]));
+    formGrid.appendChild(this._createSelectField('wh-fire-existing', 'Hiện có cứu hỏa', [
+      { value: '', text: '-- Chọn --' },
+      { value: 'Có', text: 'Có' },
+      { value: 'Không', text: 'Không' }
+    ]));
+
+    // Notes (full width)
+    const notesGroup = document.createElement('div');
+    notesGroup.className = 'form-group';
+    notesGroup.style.gridColumn = '1 / -1';
+    const notesLabel = document.createElement('label');
+    notesLabel.className = 'form-label';
+    notesLabel.textContent = 'Ghi chú';
+    const notesInput = document.createElement('input');
+    notesInput.className = 'form-control';
+    notesInput.id = 'wh-notes';
+    notesInput.value = d.notes || '';
+    notesGroup.append(notesLabel, notesInput);
+    formGrid.appendChild(notesGroup);
+
+    card.appendChild(formGrid);
+
+    const actions = document.createElement('div');
+    actions.style.cssText = 'margin-top:var(--space-lg);display:flex;gap:var(--space-sm);justify-content:flex-end';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-secondary';
+    cancelBtn.textContent = 'Hủy';
+    cancelBtn.addEventListener('click', () => warehouseModule.hideForm());
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-primary';
+    saveBtn.textContent = 'Lưu';
+    saveBtn.addEventListener('click', () => warehouseModule.save());
+    actions.append(cancelBtn, saveBtn);
+    card.appendChild(actions);
+
+    container.appendChild(card);
     // Set values if editing
     if (d.id) {
       this.editingId = d.id;
@@ -152,9 +223,22 @@ const warehouseModule = {
   async onProvinceChange() {
     const provinceId = document.getElementById('wh-province').value;
     const wardSelect = document.getElementById('wh-ward');
-    if (!provinceId) { wardSelect.innerHTML = '<option>-- Chọn tỉnh trước --</option>'; return; }
+    if (!provinceId) {
+      clearElement(wardSelect);
+      const opt = document.createElement('option');
+      opt.textContent = '-- Chọn tỉnh trước --';
+      wardSelect.appendChild(opt);
+      return;
+    }
     const wards = await window.api.locations.getWardsByProvince(parseInt(provinceId));
-    wardSelect.innerHTML = buildOptions(wards);
+    clearElement(wardSelect);
+    const opts = this._buildOptions(wards);
+    opts.forEach(optData => {
+      const opt = document.createElement('option');
+      opt.value = optData.value;
+      opt.textContent = optData.text;
+      wardSelect.appendChild(opt);
+    });
   },
 
   async save() {
@@ -209,7 +293,48 @@ const warehouseModule = {
     showToast('Đã xóa', 'success'); this.loadList();
   },
 
-  exportExcel() { excelHelper.exportModule('warehouses', 'Nha_kho'); }
+  exportExcel() { excelHelper.exportModule('warehouses', 'Nha_kho'); },
+
+  _buildOptions(items, valueField = 'id', textField = 'name') {
+    const options = [{ value: '', text: '-- Chọn --' }];
+    items.forEach(i => options.push({ value: i[valueField] || '', text: i[textField] || '' }));
+    return options;
+  },
+
+  _createFormField(id, label, type = 'input', value = '', placeholder = '') {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    const lbl = document.createElement('label');
+    lbl.className = 'form-label';
+    lbl.textContent = label;
+    const input = document.createElement('input');
+    input.className = 'form-control';
+    input.id = id;
+    input.type = type;
+    input.value = value || '';
+    if (placeholder) input.placeholder = placeholder;
+    group.append(lbl, input);
+    return group;
+  },
+
+  _createSelectField(id, label, options) {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    const lbl = document.createElement('label');
+    lbl.className = 'form-label';
+    lbl.textContent = label;
+    const select = document.createElement('select');
+    select.className = 'form-control';
+    select.id = id;
+    options.forEach(opt => {
+      const option = document.createElement('option');
+      option.value = opt.value;
+      option.textContent = opt.text;
+      select.appendChild(option);
+    });
+    group.append(lbl, select);
+    return group;
+  }
 };
 
 window.warehouseModule = warehouseModule;

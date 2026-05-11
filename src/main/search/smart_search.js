@@ -1,7 +1,7 @@
 ﻿const db = require('../database/db');
 const { parseQuery } = require('./query_parser');
 const { normalizeVietnamese } = require('./normalize');
-const { ensureTables, rebuild } = require('./search_index');
+const { ensureTables, rebuild, updateRecord, deleteRecord } = require('./search_index');
 const { rankRows } = require('./ranking');
 
 const MODULE_TABLES = {
@@ -161,4 +161,6 @@ function search(query, options = {}) {
   return ranked;
 }
 
-module.exports = { search, rebuild };
+
+module.exports = { search, rebuild, updateRecord, deleteRecord };
+

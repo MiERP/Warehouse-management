@@ -285,11 +285,14 @@ body {
 
 /* License info */
 .license-info {
-  text-align: center;
-  font-size: 13px;
+  position: fixed;
+  right: 16px;
+  bottom: 12px;
+  z-index: 100;
+  font-size: 12px;
   font-weight: 600;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
   transition: all 0.3s;
 }
 

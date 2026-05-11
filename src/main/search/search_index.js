@@ -170,6 +170,93 @@ function rebuild() {
   return { success: true, count: docs.length };
 }
 
-module.exports = { ensureTables, rebuild };
 
+// Per-record document builders for incremental index updates
+function getWarehouseDocument(id) {
+  const rows = db.prepare(`
+    SELECT w.id, w.name as title, pu.name as subtitle,
+      TRIM(COALESCE(pu.name,"") || " " || COALESCE(cu.name,"")) as unit_name,
+      w.address,
+      TRIM(COALESCE(w.warehouse_category,"") || " " || COALESCE(w.fire_need,"") || " " || COALESCE(w.fire_existing,"")) as status,
+      "" as investor, w.notes,
+      TRIM(COALESCE(w.year_built,"") || " " || COALESCE(w.year_renovated,"") || " " ||
+        COALESCE(w.storage_capacity,"") || " " || COALESCE(w.current_stock,"") || " " ||
+        COALESCE(wt.name,"") || " " || COALESCE(gt.name,"") || " " || COALESCE(qg.name,"")) as extra_text
+    FROM warehouses w
+    LEFT JOIN units pu ON w.parent_unit_id = pu.id
+    LEFT JOIN units cu ON w.child_unit_id = cu.id
+    LEFT JOIN warehouse_types wt ON w.warehouse_type_id = wt.id
+    LEFT JOIN goods_types gt ON w.goods_type_id = gt.id
+    LEFT JOIN quality_grades qg ON w.quality_grade_id = qg.id
+    WHERE w.id = ?`).all(id).map(row => createDocument("warehouse", row));
+  return rows;
+}
 
+function getCameraDocument(id) {
+  const rows = db.prepare(`
+    SELECT c.id, COALESCE(cu.name, "He thong camera") as title, pu.name as subtitle,
+      TRIM(COALESCE(pu.name,"") || " " || COALESCE(cu.name,"")) as unit_name,
+      "" as address, c.status, c.investor, c.notes,
+      TRIM("camera cam an ninh " || COALESCE(c.unit_measure,"") || " " || COALESCE(c.quantity,"") || " " ||
+        COALESCE(c.year_installed,"") || " " || COALESCE(c.year_repaired,"") || " " ||
+        COALESCE(c.screen_count,"") || " man hinh " || COALESCE(c.camera_count,"") || " cam " ||
+        COALESCE(c.repair_need,"") || " sua chua " || COALESCE(c.new_install_need,"") || " lap moi") as extra_text
+    FROM cameras c LEFT JOIN units pu ON c.parent_unit_id = pu.id LEFT JOIN units cu ON c.child_unit_id = cu.id
+    WHERE c.id = ?`).all(id).map(row => createDocument("camera", row));
+  return rows;
+}
+
+function getFireDocument(id) {
+  const rows = db.prepare(`
+    SELECT f.id, COALESCE(cu.name, "He thong cuu hoa") as title, pu.name as subtitle,
+      TRIM(COALESCE(pu.name,"") || " " || COALESCE(cu.name,"")) as unit_name,
+      "" as address, f.status, f.investor, f.notes,
+      TRIM("cuu hoa pccc phong chay chua chay " || COALESCE(f.unit_measure,"") || " " || COALESCE(f.quantity,"") || " " ||
+        COALESCE(f.year_installed,"") || " " || COALESCE(f.year_repaired,"") || " " ||
+        COALESCE(f.pump_house_count,"") || " nha bom " || COALESCE(f.hydrant_count,"") || " hong " ||
+        COALESCE(f.repair_need,"") || " sua chua " || COALESCE(f.new_install_need,"") || " lap moi") as extra_text
+    FROM fire_systems f LEFT JOIN units pu ON f.parent_unit_id = pu.id LEFT JOIN units cu ON f.child_unit_id = cu.id
+    WHERE f.id = ?`).all(id).map(row => createDocument("fire", row));
+  return rows;
+}
+
+function getConstructionDocument(id) {
+  const rows = db.prepare(`
+    SELECT c.id, c.name as title, pu.name as subtitle,
+      TRIM(COALESCE(pu.name,"") || " " || COALESCE(cu.name,"")) as unit_name,
+      "" as address, c.status, c.investor,
+      TRIM(COALESCE(c.description,"") || " " || COALESCE(c.notes,"")) as notes,
+      TRIM("cong trinh du an xay dung " || COALESCE(c.construction_type,"") || " " ||
+        COALESCE(c.year_started,"") || " " || COALESCE(c.year_completed,"") || " " ||
+        COALESCE(c.approval_decision_no,"") || " " || COALESCE(c.contract_number,"") || " " ||
+        COALESCE(c.contractor_name,"") || " " || COALESCE(c.settlement_decision_no,"") || " " ||
+        COALESCE(c.settlement_value,"") || " quyet toan") as extra_text
+    FROM constructions c LEFT JOIN units pu ON c.parent_unit_id = pu.id LEFT JOIN units cu ON c.child_unit_id = cu.id
+    WHERE c.id = ?`).all(id).map(row => createDocument("construction", row));
+  return rows;
+}
+
+const perRecordFns = {
+  warehouse: getWarehouseDocument,
+  camera: getCameraDocument,
+  fire: getFireDocument,
+  construction: getConstructionDocument
+};
+
+function updateRecord(module, recordId) {
+  db.prepare("DELETE FROM smart_search_fts WHERE module = ? AND record_id = ?").run(module, recordId);
+  const fn = perRecordFns[module];
+  if (!fn) return;
+  const docs = fn(recordId);
+  if (!docs.length) return;
+  const insert = db.prepare(`
+    INSERT INTO smart_search_fts (module, record_id, title, subtitle, unit_name, address, status, investor, notes, normalized_text)
+    VALUES (@module, @record_id, @title, @subtitle, @unit_name, @address, @status, @investor, @notes, @normalized_text)`);
+  docs.forEach(doc => insert.run(doc));
+}
+
+function deleteRecord(module, recordId) {
+  db.prepare("DELETE FROM smart_search_fts WHERE module = ? AND record_id = ?").run(module, recordId);
+}
+
+module.exports = { ensureTables, rebuild, updateRecord, deleteRecord };

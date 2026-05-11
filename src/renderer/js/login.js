@@ -62,9 +62,9 @@ function checkLicense() {
   }
 
   if (daysLeft <= 7) {
-    showLicense('Con ' + daysLeft + ' ngay su dung - sap het han', 'warning');
+    showLicense('demo - còn ' + daysLeft + ' ngày', 'warning');
   } else {
-    showLicense('Con ' + daysLeft + ' ngay su dung', 'valid');
+    showLicense('demo - còn ' + daysLeft + ' ngày', 'valid');
   }
   return { valid: true, daysLeft };
 }
@@ -139,6 +139,7 @@ form.addEventListener('submit', async (e) => {
     const sessionInfo = {
       unitName,
       userName,
+      password,
       loginTime: new Date().toISOString(),
       theme: getPreferredTheme(),
       licenseKey: LICENSE_KEY,

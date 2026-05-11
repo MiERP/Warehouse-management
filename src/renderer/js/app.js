@@ -6,12 +6,12 @@ const headerTitle = document.getElementById('header-title');
 
 const PAGE_TITLES = {
   'dashboard': 'Dashboard',
-  'warehouses': 'Qu?n l� Nh� kho',
-  'fire-systems': 'H? th?ng C?u h?a t?p trung',
+  'warehouses': 'Quản lý Nhà kho',
+  'fire-systems': 'Hệ thống Cứu hỏa tập trung',
   'cameras': 'Camera An ninh',
-  'constructions': 'C�ng tr�nh',
-  'config': 'C?u h�nh h? th?ng',
-  'documents': 'Qu?n l� T�i li?u'
+  'constructions': 'Công trình',
+  'config': 'Cấu hình hệ thống',
+  'documents': 'Quản lý Tài liệu'
 };
 
 function navigateTo(pageId) {
@@ -54,8 +54,20 @@ document.getElementById('config-tabs')?.addEventListener('click', (e) => {
 // Modal
 function openModal(title, bodyHTML, footerHTML) {
   document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-body').innerHTML = bodyHTML;
-  document.getElementById('modal-footer').innerHTML = footerHTML || '';
+  const modalBody = document.getElementById('modal-body');
+  const modalFooter = document.getElementById('modal-footer');
+  clearElement(modalBody);
+  clearElement(modalFooter);
+  if (bodyHTML) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = bodyHTML;
+    modalBody.append(...tempDiv.children);
+  }
+  if (footerHTML) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = footerHTML;
+    modalFooter.append(...tempDiv.children);
+  }
   document.getElementById('modal-overlay').classList.add('active');
 }
 function closeModal() { document.getElementById('modal-overlay').classList.remove('active'); }
@@ -121,7 +133,7 @@ function confirmAction(message) {
 }
 
 // Helper: build <select> options
-function buildOptions(items, valueField = 'id', textField = 'name', placeholder = '-- Ch?n --') {
+function buildOptions(items, valueField = 'id', textField = 'name', placeholder = '-- Chọn --') {
   let html = `<option value="">${placeholder}</option>`;
   items.forEach(i => { html += `<option value="${i[valueField]}">${i[textField]}</option>`; });
   return html;
@@ -148,17 +160,45 @@ function setupDashboardConstructionFilter(rows) {
     const field = fieldSelect.value;
     const value = valueSelect.value;
     const filtered = value ? rows.filter(row => String(row[field] || '') === value) : rows;
-    countEl.textContent = `${filtered.length} d? �n`;
-    body.innerHTML = filtered.map(c => `
-      <tr style="cursor:pointer" onclick="openSearchResult('construction',${c.id})"><td>${escapeHTML(c.name)}</td><td>${escapeHTML(c.construction_type || '-')}</td>
-      <td>${c.status ? '<span class="badge '+(c.status==='Ho�n th�nh'?'success':'info')+'">' + escapeHTML(c.status) + '</span>' : '-'}</td>
-      <td>${escapeHTML(c.parent_unit_name || '-')}</td></tr>
-    `).join('');
+    countEl.textContent = `${filtered.length} dự án`;
+    clearElement(body);
+    filtered.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', () => openSearchResult('construction', c.id));
+      const tdName = document.createElement('td');
+      tdName.textContent = c.name || '';
+      const tdType = document.createElement('td');
+      tdType.textContent = c.construction_type || '-';
+      const tdStatus = document.createElement('td');
+      if (c.status) {
+        const span = document.createElement('span');
+        span.className = 'badge ' + (c.status === 'Hoàn thành' ? 'success' : 'info');
+        span.textContent = c.status;
+        tdStatus.appendChild(span);
+      } else {
+        tdStatus.textContent = '-';
+      }
+      const tdUnit = document.createElement('td');
+      tdUnit.textContent = c.parent_unit_name || '-';
+      tr.append(tdName, tdType, tdStatus, tdUnit);
+      body.appendChild(tr);
+    });
   };
 
   const refreshValues = () => {
     const values = uniqueDashboardValues(rows, fieldSelect.value);
-    valueSelect.innerHTML = '<option value="">T?t c?</option>' + values.map(value => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`).join('');
+    clearElement(valueSelect);
+    const allOpt = document.createElement('option');
+    allOpt.value = '';
+    allOpt.textContent = 'Tất cả';
+    valueSelect.appendChild(allOpt);
+    values.forEach(value => {
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = value;
+      valueSelect.appendChild(opt);
+    });
     renderRows();
   };
 
@@ -167,7 +207,7 @@ function setupDashboardConstructionFilter(rows) {
   refreshValues();
 }
 
-// === DASHBOARD (Redesigned � matching mockup image 5) ===
+// === DASHBOARD ===
 async function loadDashboard() {
   try {
     const stats = await window.api.stats.overview();
@@ -182,52 +222,181 @@ async function loadDashboard() {
 
     // Warehouse by type (list)
     const whTypeContainer = document.getElementById('dashboard-warehouse-types');
+    clearElement(whTypeContainer);
     if (stats.warehouseByType && stats.warehouseByType.length) {
-      whTypeContainer.innerHTML = `<table style="width:100%"><thead><tr>
-        <th style="text-align:left">Ph�n lo?i kho</th><th>S? lu?ng</th><th>T?ng DT (m�)</th>
-      </tr></thead><tbody>${stats.warehouseByType.map(w => `
-        <tr style="cursor:pointer" onclick="openDashboardFilter('warehouses',{warehouse_type_id:${w.type_id === null ? 'null' : w.type_id},label:'Lo?i kho: ${escapeHTML(w.type_name)}'})"><td>${escapeHTML(w.type_name)}</td><td style="text-align:center">${w.count}</td>
-        <td style="text-align:center">${w.total_area ? Math.round(w.total_area) : 0}</td></tr>
-      `).join('')}</tbody></table>`;
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      ['Phân loại kho', 'Số lượng', 'Tổng DT (m²)'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        if (text !== 'Phân loại kho') th.style.textAlign = 'center';
+        else th.style.textAlign = 'left';
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      const tbody = document.createElement('tbody');
+      stats.warehouseByType.forEach(w => {
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', () => openDashboardFilter('warehouses', { warehouse_type_id: w.type_id === null ? null : w.type_id, label: 'Loại kho: ' + (w.type_name || '') }));
+        const tdName = document.createElement('td');
+        tdName.textContent = w.type_name || '';
+        const tdCount = document.createElement('td');
+        tdCount.style.textAlign = 'center';
+        tdCount.textContent = w.count || 0;
+        const tdArea = document.createElement('td');
+        tdArea.style.textAlign = 'center';
+        tdArea.textContent = w.total_area ? Math.round(w.total_area) : 0;
+        tr.append(tdName, tdCount, tdArea);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      whTypeContainer.appendChild(table);
     } else {
-      whTypeContainer.innerHTML = '<p style="color:var(--text-muted)">Chua c� d? li?u</p>';
+      const p = document.createElement('p');
+      p.style.color = 'var(--text-muted)';
+      p.textContent = 'Chưa có dữ liệu';
+      whTypeContainer.appendChild(p);
     }
 
     // Constructions by year (list)
     const conContainer = document.getElementById('dashboard-constructions');
+    clearElement(conContainer);
     if (stats.constructionsByYear && stats.constructionsByYear.length) {
-      conContainer.innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-        <select class="form-control" id="dash-con-filter-field" style="max-width:170px"><option value="status">Tr?ng th�i</option><option value="parent_unit_name">�on v?</option><option value="year_started">Nam b?t d?u</option><option value="year_completed">Nam ho�n th�nh</option><option value="construction_type">Lo?i</option></select>
-        <select class="form-control" id="dash-con-filter-value" style="max-width:240px"></select>
-        <strong id="dash-con-count">${stats.constructionsByYear.length} d? �n</strong>
-      </div><table style="width:100%"><thead><tr>
-        <th style="text-align:left">T�n c�ng tr�nh</th><th>Lo?i</th><th>Tr?ng th�i</th><th>�on v?</th>
-      </tr></thead><tbody id="dash-con-body">${stats.constructionsByYear.map(c => `
-        <tr style="cursor:pointer" onclick="openSearchResult('construction',${c.id})"><td>${escapeHTML(c.name)}</td><td>${escapeHTML(c.construction_type || '-')}</td>
-        <td>${c.status ? '<span class="badge '+(c.status==='Ho�n th�nh'?'success':'info')+'">' + escapeHTML(c.status) + '</span>' : '-'}</td>
-        <td>${escapeHTML(c.parent_unit_name || '-')}</td></tr>
-      `).join('')}</tbody></table>`;
+      const filterBar = document.createElement('div');
+      filterBar.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:12px';
+
+      const fieldSelect = document.createElement('select');
+      fieldSelect.className = 'form-control';
+      fieldSelect.id = 'dash-con-filter-field';
+      fieldSelect.style.maxWidth = '170px';
+      const fieldOptions = [
+        { value: 'status', text: 'Trạng thái' },
+        { value: 'parent_unit_name', text: 'Đơn vị' },
+        { value: 'year_started', text: 'Năm bắt đầu' },
+        { value: 'year_completed', text: 'Năm hoàn thành' },
+        { value: 'construction_type', text: 'Loại' }
+      ];
+      fieldOptions.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.text;
+        fieldSelect.appendChild(option);
+      });
+
+      const valueSelect = document.createElement('select');
+      valueSelect.className = 'form-control';
+      valueSelect.id = 'dash-con-filter-value';
+      valueSelect.style.maxWidth = '240px';
+
+      const countStrong = document.createElement('strong');
+      countStrong.id = 'dash-con-count';
+      countStrong.textContent = `${stats.constructionsByYear.length} dự án`;
+
+      filterBar.append(fieldSelect, valueSelect, countStrong);
+      conContainer.appendChild(filterBar);
+
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      ['Tên công trình', 'Loại', 'Trạng thái', 'Đơn vị'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        th.style.textAlign = text === 'Tên công trình' ? 'left' : 'center';
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      tbody.id = 'dash-con-body';
+      stats.constructionsByYear.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', () => openSearchResult('construction', c.id));
+        const tdName = document.createElement('td');
+        tdName.textContent = c.name || '';
+        const tdType = document.createElement('td');
+        tdType.style.textAlign = 'center';
+        tdType.textContent = c.construction_type || '-';
+        const tdStatus = document.createElement('td');
+        tdStatus.style.textAlign = 'center';
+        if (c.status) {
+          const span = document.createElement('span');
+          span.className = 'badge ' + (c.status === 'Hoàn thành' ? 'success' : 'info');
+          span.textContent = c.status;
+          tdStatus.appendChild(span);
+        } else {
+          tdStatus.textContent = '-';
+        }
+        const tdUnit = document.createElement('td');
+        tdUnit.style.textAlign = 'center';
+        tdUnit.textContent = c.parent_unit_name || '-';
+        tr.append(tdName, tdType, tdStatus, tdUnit);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      conContainer.appendChild(table);
       setupDashboardConstructionFilter(stats.constructionsByYear);
     } else {
-      conContainer.innerHTML = '<p style="color:var(--text-muted)">Kh�ng c� d? �n trong nam nay</p>';
+      const p = document.createElement('p');
+      p.style.color = 'var(--text-muted)';
+      p.textContent = 'Không có dự án trong năm nay';
+      conContainer.appendChild(p);
     }
 
     // Alerts
     const alertContainer = document.getElementById('dashboard-alerts');
+    clearElement(alertContainer);
     if (stats.alerts && stats.alerts.length) {
-      const typeLabels = { warehouse: 'Nh� kho', fire_system: 'C?u h?a', camera: 'Camera' };
-      alertContainer.innerHTML = `<table style="width:100%"><thead><tr>
-        <th style="text-align:left">T�n</th><th>Lo?i</th><th>Nam XD</th><th>Nam SC</th><th>�on v?</th>
-      </tr></thead><tbody>${stats.alerts.map(a => `
-        <tr style="color:var(--color-warning)">
-          <td>${a.name || '-'}</td>
-          <td><span class="badge warning">${typeLabels[a.type] || a.type}</span></td>
-          <td>${a.year_built || '-'}</td><td>${a.year_renovated || '-'}</td>
-          <td>${a.parent_unit_name || '-'}</td>
-        </tr>
-      `).join('')}</tbody></table>`;
+      const typeLabels = { warehouse: 'Nhà kho', fire_system: 'Cứu hỏa', camera: 'Camera' };
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      ['Tên', 'Loại', 'Năm XD', 'Năm SC', 'Đơn vị'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        th.style.textAlign = text === 'Tên' ? 'left' : 'center';
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      const tbody = document.createElement('tbody');
+      stats.alerts.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.style.color = 'var(--color-warning)';
+        const tdName = document.createElement('td');
+        tdName.textContent = a.name || '-';
+        const tdType = document.createElement('td');
+        tdType.style.textAlign = 'center';
+        const span = document.createElement('span');
+        span.className = 'badge warning';
+        span.textContent = typeLabels[a.type] || a.type || '';
+        tdType.appendChild(span);
+        const tdYearBuilt = document.createElement('td');
+        tdYearBuilt.style.textAlign = 'center';
+        tdYearBuilt.textContent = a.year_built || '-';
+        const tdYearRenovated = document.createElement('td');
+        tdYearRenovated.style.textAlign = 'center';
+        tdYearRenovated.textContent = a.year_renovated || '-';
+        const tdUnit = document.createElement('td');
+        tdUnit.style.textAlign = 'center';
+        tdUnit.textContent = a.parent_unit_name || '-';
+        tr.append(tdName, tdType, tdYearBuilt, tdYearRenovated, tdUnit);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      alertContainer.appendChild(table);
     } else {
-      alertContainer.innerHTML = '<p style="color:var(--text-success)">? Kh�ng c� c?nh b�o</p>';
+      const p = document.createElement('p');
+      p.style.color = 'var(--text-success)';
+      p.textContent = '✓ Không có cảnh báo';
+      alertContainer.appendChild(p);
     }
   } catch (e) { console.error('Dashboard error:', e); }
 }
@@ -255,13 +424,13 @@ async function openSearchResult(module, id) {
 }
 
 function renderSearchResults(results) {
-  const moduleLabels = { warehouse: 'Nh� kho', camera: 'Camera', fire: 'C?u h?a', construction: 'C�ng tr�nh', documents: 'T�i li?u' };
+  const moduleLabels = { warehouse: 'Nhà kho', camera: 'Camera', fire: 'Cứu hỏa', construction: 'Công trình', documents: 'Tài liệu' };
   searchResults.replaceChildren();
 
   if (!results.length) {
     const empty = document.createElement('div');
     empty.style.cssText = 'padding:12px;color:var(--text-muted)';
-    empty.textContent = 'Kh�ng t�m th?y';
+    empty.textContent = 'Không tìm thấy';
     searchResults.appendChild(empty);
     return;
   }
@@ -286,7 +455,7 @@ function renderSearchResults(results) {
 
     const subtitle = document.createElement('div');
     subtitle.style.cssText = 'font-size:11px;color:var(--text-muted)';
-    subtitle.textContent = `${moduleLabels[r.module] || r.module} � ${r.subtitle || r.status || ''}`;
+    subtitle.textContent = `${moduleLabels[r.module] || r.module} • ${r.subtitle || r.status || ''}`;
     item.append(header, subtitle);
 
     if (Array.isArray(r.matched_reason) && r.matched_reason.length) {
@@ -314,7 +483,11 @@ searchInput?.addEventListener('input', () => {
       searchResults.style.display = 'block';
     } catch (e) {
       console.error('Search error:', e);
-      searchResults.innerHTML = '<div style="padding:12px;color:var(--color-danger)">L?i t�m ki?m</div>';
+      clearElement(searchResults);
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = 'padding:12px;color:var(--color-danger)';
+      errorDiv.textContent = 'Lỗi tìm kiếm';
+      searchResults.appendChild(errorDiv);
       searchResults.style.display = 'block';
     }
   }, 250);
@@ -353,18 +526,24 @@ document.getElementById('header-theme-toggle')?.addEventListener('click', () => 
 // === SESSION INFO ===
 if (window.sessionApi) {
   window.sessionApi.onInfo((info) => {
+    const userName = info.userName || 'Người dùng';
+    const unitName = info.unitName || 'Đơn vị';
     const nameEl = document.getElementById('sidebar-user-name');
     const unitEl = document.getElementById('sidebar-user-unit');
-    if (nameEl) nameEl.textContent = info.userName || '�';
-    if (unitEl) unitEl.textContent = info.unitName || '�';
-    // Apply theme from login
+    const headerUserEl = document.getElementById('header-user');
+    if (nameEl) nameEl.textContent = userName;
+    if (unitEl) unitEl.textContent = unitName;
+    if (headerUserEl) {
+      headerUserEl.textContent = userName.trim().charAt(0).toUpperCase() || 'N';
+      headerUserEl.title = userName;
+    }
     initTheme(info.theme);
   });
 }
 
 // === LOGOUT ===
 document.getElementById('sidebar-logout-btn')?.addEventListener('click', async () => {
-  const ok = await confirmAction('B?n c� ch?c mu?n dang xu?t?');
+  const ok = await confirmAction('Bạn có chắc muốn đăng xuất?');
   if (ok && window.appApi) {
     await window.appApi.logout();
   }
