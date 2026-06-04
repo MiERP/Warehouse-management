@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
@@ -294,6 +294,10 @@
             <div class="tab-item" data-tab="config-goods-types">Loại hàng</div>
             <div class="tab-item" data-tab="config-quality-grades">Chất lượng</div>
             <div class="tab-item" data-tab="config-lightning">Chống sét</div>
+          <div class="tab-item" data-tab="config-statuses">Trạng thái</div>
+          <div class="tab-item" data-tab="config-investors">Chủ đầu tư</div>
+          <div class="tab-item" data-tab="config-unit-measures">Đơn vị tính</div>
+          <div class="tab-item" data-tab="config-construction-types">Loại công trình</div>
             <div class="tab-item" data-tab="config-safety">An toàn dữ liệu</div>
             <div class="tab-item" data-tab="config-duplicates">Rà soát trùng</div>
           </div>
@@ -336,6 +340,23 @@
           <div class="tab-content" id="config-lightning">
             <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('lightning_protection', 'Chống sét')">Thêm loại</button></div>
             <div class="card"><div id="lightning-list"></div></div>
+          </div>
+﻿
+          <div class="tab-content" id="config-statuses">
+            <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('statuses', 'Trạng thái')">Thêm trạng thái</button></div>
+            <div class="card"><div id="statuses-list"></div></div>
+          </div>
+          <div class="tab-content" id="config-investors">
+            <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('investors', 'Chủ đầu tư')">Thêm chủ đầu tư</button></div>
+            <div class="card"><div id="investors-list"></div></div>
+          </div>
+          <div class="tab-content" id="config-unit-measures">
+            <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('unit_measures', 'Đơn vị tính')">Thêm đơn vị tính</button></div>
+            <div class="card"><div id="unit-measures-list"></div></div>
+          </div>
+          <div class="tab-content" id="config-construction-types">
+            <div class="toolbar"><button class="btn btn-primary" onclick="configModule.addCatalog('construction_types', 'Loại công trình')">Thêm loại</button></div>
+            <div class="card"><div id="construction-types-list"></div></div>
           </div>
           <div class="tab-content" id="config-safety">
             <div class="toolbar">
@@ -391,6 +412,7 @@
   <script src="js/modules/documents.js"></script>
 </body>
 </html>
+
 
 
 

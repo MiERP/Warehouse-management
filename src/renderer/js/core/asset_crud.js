@@ -87,8 +87,101 @@ function appendSectionTitle(container, title) {
   container.appendChild(section);
 }
 
+function unitPathLabel(unit, byId) {
+  const names = [];
+  let current = unit;
+  while (current) {
+    names.unshift(current.name);
+    current = byId.get(current.parent_id);
+  }
+  return names.join(' > ');
+}
+
 function unitOptions(units) {
-  return [{ value: '', label: '-- Chọn --' }, ...units.map(unit => ({ value: String(unit.id), label: unit.name }))];
+  const byId = new Map(units.map(unit => [unit.id, unit]));
+  return [{ value: '', label: '-- Chọn --' }, ...units.map(unit => ({ value: String(unit.id), label: unitPathLabel(unit, byId) }))];
+}
+
+function findByValue(items, value, valueField = 'id') {
+  return items.find(item => String(item[valueField] ?? '') === String(value ?? ''));
+}
+
+function catalogNameById(items, id) {
+  const item = findByValue(items, id);
+  return item ? item.name : '';
+}
+
+function unitNameById(units, id) {
+  return catalogNameById(units, id);
+}
+
+function createCombobox(items, label, inputId, valueId, value = '', options = {}) {
+  const valueField = options.valueField || 'id';
+  const textField = options.textField || 'name';
+  const group = document.createElement('div');
+  group.className = 'form-group';
+
+  const labelElement = document.createElement('label');
+  labelElement.className = 'form-label';
+  labelElement.setAttribute('for', inputId);
+  labelElement.textContent = label;
+
+  const input = document.createElement('input');
+  input.className = 'form-control';
+  input.id = inputId;
+  input.setAttribute('list', `${inputId}-options`);
+  input.placeholder = options.placeholder || '-- Chọn hoặc nhập --';
+
+  const hidden = document.createElement('input');
+  hidden.type = 'hidden';
+  hidden.id = valueId;
+  hidden.value = value || '';
+
+  const datalist = document.createElement('datalist');
+  datalist.id = `${inputId}-options`;
+
+  items.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item[textField] || '';
+    datalist.appendChild(option);
+  });
+
+  const selected = findByValue(items, value, valueField);
+  input.value = selected ? selected[textField] || '' : value || '';
+
+  const syncValue = () => {
+    const selectedItem = items.find(item => String(item[textField] || '') === input.value);
+    hidden.value = selectedItem ? selectedItem[valueField] || '' : input.value.trim();
+  };
+  input.addEventListener('input', syncValue);
+  input.addEventListener('change', syncValue);
+
+  group.append(labelElement, input, hidden, datalist);
+  return group;
+}
+
+function createCatalogCombobox(items, type, label, inputId, valueId, value = '', options = {}) {
+  return createCombobox(items, label, inputId, valueId, value, options);
+}
+
+async function resolveCatalogValue(tableName, inputId, valueId, options = {}) {
+  const valueField = options.valueField || 'id';
+  const text = document.getElementById(inputId).value.trim();
+  const rawValue = document.getElementById(valueId).value.trim();
+  if (!text && !rawValue) return null;
+
+  const rows = await window.api.catalogs.getAll(tableName);
+  const existing = rows.find(row => String(row.name || '').toLowerCase() === text.toLowerCase());
+  if (existing) return existing[valueField];
+
+  if (!Number.isNaN(parseInt(rawValue, 10)) && valueField === 'id') return parseInt(rawValue, 10);
+
+  const created = await window.api.catalogs.create(tableName, { name: text || rawValue, description: '' });
+  return valueField === 'name' ? created.name : created.id;
+}
+
+function createUnitCombobox(units, label, inputId, valueId, value = '') {
+  return createCombobox(units, label, inputId, valueId, value);
 }
 
 function createAssetCrudModule(config) {
@@ -129,9 +222,15 @@ function createAssetCrudModule(config) {
     },
 
     async showForm(data) {
-      const units = await window.api.units.getAll();
+      const [units, statuses, investors, unitMeasures] = await Promise.all([
+        window.api.units.getAll(),
+        window.api.catalogs.getAll('statuses'),
+        window.api.catalogs.getAll('investors'),
+        window.api.catalogs.getAll('unit_measures')
+      ]);
       const current = data || {};
       this.editingId = current.id || null;
+      this.currentRecord = current.id ? current : null;
       const container = document.getElementById(config.formContainerId);
       clearElement(container);
 
@@ -151,20 +250,25 @@ function createAssetCrudModule(config) {
       const grid = document.createElement('div');
       grid.className = 'form-grid';
       appendSectionTitle(grid, 'Thông tin đơn vị');
-      grid.appendChild(createFormGroup({ label: 'Đơn vị cha', id: `${config.prefix}-parent`, options: unitOptions(units), value: current.parent_unit_id || '' }));
-      grid.appendChild(createFormGroup({ label: 'Đơn vị con', id: `${config.prefix}-child`, options: unitOptions(units), value: current.child_unit_id || '' }));
-      grid.appendChild(createFormGroup({ label: 'Đơn vị tính', id: `${config.prefix}-measure`, options: [{ value: '', label: '-- Chọn --' }, 'Bộ', 'Hệ thống', 'Cái'], value: current.unit_measure || '' }));
+      grid.appendChild(createFormGroup({ label: 'Vị trí trong cây đơn vị', id: `${config.prefix}-unit`, options: unitOptions(units), value: current.unit_id || current.child_unit_id || current.parent_unit_id || '' }));
+      grid.appendChild(createCatalogCombobox(unitMeasures, 'unit_measures', 'Đơn vị tính', `${config.prefix}-measure-input`, `${config.prefix}-measure`, current.unit_measure || '', { valueField: 'name' }));
 
       appendSectionTitle(grid, 'Thông số kỹ thuật');
       for (const field of config.technicalFields) {
-        grid.appendChild(createFormGroup({
-          label: field.label,
-          id: `${config.prefix}-${field.id}`,
-          type: field.type || 'number',
-          value: current[field.name] || '',
-          placeholder: field.placeholder || '',
-          full: field.full || false
-        }));
+        if (field.name === 'investor') {
+          grid.appendChild(createCatalogCombobox(investors, 'investors', field.label, `${config.prefix}-${field.id}-input`, `${config.prefix}-${field.id}`, current[field.name] || '', { valueField: 'name' }));
+        } else if (field.name === 'status') {
+          grid.appendChild(createCatalogCombobox(statuses, 'statuses', field.label, `${config.prefix}-${field.id}-input`, `${config.prefix}-${field.id}`, current[field.name] || '', { valueField: 'name' }));
+        } else {
+          grid.appendChild(createFormGroup({
+            label: field.label,
+            id: `${config.prefix}-${field.id}`,
+            type: field.type || 'number',
+            value: current[field.name] || '',
+            placeholder: field.placeholder || '',
+            full: field.full || false
+          }));
+        }
       }
 
       appendSectionTitle(grid, 'Nhu cầu');
@@ -190,18 +294,20 @@ function createAssetCrudModule(config) {
     hideForm() {
       clearElement(document.getElementById(config.formContainerId));
       this.editingId = null;
+      this.currentRecord = null;
     },
 
-    collectData() {
+    async collectData() {
       const data = {
-        parent_unit_id: nullableNumberValue(document.getElementById(`${config.prefix}-parent`).value),
-        child_unit_id: nullableNumberValue(document.getElementById(`${config.prefix}-child`).value),
-        unit_measure: document.getElementById(`${config.prefix}-measure`).value || null,
+        unit_id: nullableNumberValue(document.getElementById(`${config.prefix}-unit`).value),
+        parent_unit_id: this.currentRecord?.parent_unit_id || null,
+        child_unit_id: this.currentRecord?.child_unit_id || null,
+        unit_measure: await resolveCatalogValue('unit_measures', `${config.prefix}-measure-input`, `${config.prefix}-measure`, { valueField: 'name' }),
         quantity: numberValue(document.getElementById(`${config.prefix}-qty`).value),
         year_installed: nullableNumberValue(document.getElementById(`${config.prefix}-year`).value),
         year_repaired: nullableNumberValue(document.getElementById(`${config.prefix}-repair-year`).value),
-        investor: document.getElementById(`${config.prefix}-investor`).value.trim() || null,
-        status: document.getElementById(`${config.prefix}-status`).value.trim() || null,
+        investor: await resolveCatalogValue('investors', `${config.prefix}-investor-input`, `${config.prefix}-investor`, { valueField: 'name' }),
+        status: await resolveCatalogValue('statuses', `${config.prefix}-status-input`, `${config.prefix}-status`, { valueField: 'name' }),
         repair_need: numberValue(document.getElementById(`${config.prefix}-repair-need`).value),
         new_install_need: numberValue(document.getElementById(`${config.prefix}-new-need`).value),
         notes: document.getElementById(`${config.prefix}-notes`).value.trim() || null,
@@ -212,7 +318,7 @@ function createAssetCrudModule(config) {
 
     async save() {
       try {
-        const data = this.collectData();
+        const data = await this.collectData();
         if (this.editingId) await window.api[config.api].update(this.editingId, data);
         else await window.api[config.api].create(data);
         showToast(this.editingId ? 'Đã cập nhật' : config.createdToast, 'success');

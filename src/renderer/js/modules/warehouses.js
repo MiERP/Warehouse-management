@@ -30,13 +30,13 @@ const warehouseModule = {
       const nameCell = appendTextCell(row, warehouse.name);
       nameCell.style.fontWeight = '600';
       appendTextCell(row, warehouse.parent_unit_name);
-      appendTextCell(row, warehouse.child_unit_name);
+      appendTextCell(row, warehouse.warehouse_category === 'chien_dich' ? 'Kho chiến dịch' : warehouse.warehouse_category === 'chien_thuat' ? 'Kho chiến thuật' : '-');
 
       const categoryCell = document.createElement('td');
-      if (warehouse.warehouse_category === 'chien_dich' || warehouse.warehouse_category === 'chien_thuat') {
+      if (warehouse.warehouse_type_name) {
         const badge = document.createElement('span');
-        badge.className = warehouse.warehouse_category === 'chien_dich' ? 'badge info' : 'badge success';
-        badge.textContent = warehouse.warehouse_category === 'chien_dich' ? 'Chiến dịch' : 'Chiến thuật';
+        badge.className = 'badge info';
+        badge.textContent = warehouse.warehouse_type_name;
         categoryCell.appendChild(badge);
       } else {
         categoryCell.textContent = '-';
@@ -70,7 +70,9 @@ const warehouseModule = {
       window.api.catalogs.getAll('quality_grades')
     ]);
     const d = data || {};
+    this.currentUnits = units;
     this.editingId = d.id || null;
+    this.currentRecord = d.id ? d : null;
     const container = document.getElementById('warehouse-form-container');
     clearElement(container);
 
@@ -98,20 +100,19 @@ const warehouseModule = {
     secInfo.className = 'form-section-title';
     secInfo.textContent = 'Thông tin chung';
     formGrid.appendChild(secInfo);
-    formGrid.appendChild(this._createFormField('wh-name', 'Tên kho *', 'input', d.name || ''));
-    formGrid.appendChild(this._createSelectField('wh-category', 'Phân loại kho', [
+    formGrid.appendChild(this._createFormField('wh-name', 'Tên kho *', 'input', d.name || d.unit_name || ''));
+    formGrid.appendChild(this._createUnitSearchField(units, 'Đơn vị cấp trên trực tiếp', 'wh-parent-unit-input', 'wh-parent-unit', d.parent_unit_id || ''));
+    formGrid.appendChild(this._createSelectField('wh-warehouse-category', 'Loại kho', [
       { value: '', text: '-- Chọn --' },
-      { value: 'chien_dich', text: 'Kho chiến dịch' },
-      { value: 'chien_thuat', text: 'Kho chiến thuật' }
+      { value: 'chien_thuat', text: 'Kho chiến thuật' },
+      { value: 'chien_dich', text: 'Kho chiến dịch' }
     ]));
-    formGrid.appendChild(this._createSelectField('wh-parent-unit', 'Đơn vị cha', this._buildOptions(units)));
-    formGrid.appendChild(this._createSelectField('wh-child-unit', 'Đơn vị con', this._buildOptions(units)));
+    formGrid.appendChild(createCatalogCombobox(wtypes, 'warehouse_types', 'Phân loại kho', 'wh-category-input', 'wh-category-value', d.warehouse_type_id || ''));
     const provinceField = this._createSelectField('wh-province', 'Tỉnh', this._buildOptions(provinces));
     provinceField.querySelector('select').addEventListener('change', () => warehouseModule.onProvinceChange());
     formGrid.appendChild(provinceField);
     formGrid.appendChild(this._createSelectField('wh-ward', 'Xã', [{ value: '', text: '-- Chọn tỉnh trước --' }]));
     formGrid.appendChild(this._createFormField('wh-address', 'Địa chỉ chi tiết', 'input', d.address || '', 'Phường, TP...'));
-    formGrid.appendChild(this._createSelectField('wh-type', 'Loại nhà kho', this._buildOptions(wtypes)));
 
     // Section: Thông số kỹ thuật
     const secTech = document.createElement('div');
@@ -127,14 +128,14 @@ const warehouseModule = {
     formGrid.appendChild(this._createFormField('wh-renovation', 'Khả năng cải tạo', 'input', d.renovation_potential || '', 'km'));
     formGrid.appendChild(this._createFormField('wh-capacity', 'Trữ lượng dự trữ (tấn)', 'number', d.storage_capacity || ''));
     formGrid.appendChild(this._createFormField('wh-stock', 'Trữ lượng hiện tại (tấn)', 'number', d.current_stock || ''));
-    formGrid.appendChild(this._createSelectField('wh-goods', 'Loại hàng', this._buildOptions(gtypes)));
+    formGrid.appendChild(createCatalogCombobox(gtypes, 'goods_types', 'Loại hàng', 'wh-goods-input', 'wh-goods-value', d.goods_type_id || ''));
 
     // Section: Phân cấp chất lượng
     const secQuality = document.createElement('div');
     secQuality.className = 'form-section-title';
     secQuality.textContent = 'Phân cấp chất lượng nhà kho';
     formGrid.appendChild(secQuality);
-    formGrid.appendChild(this._createSelectField('wh-quality', 'Xếp loại chung', this._buildOptions(qgrades)));
+    formGrid.appendChild(createCatalogCombobox(qgrades, 'quality_grades', 'Xếp loại chung', 'wh-quality-input', 'wh-quality-value', d.quality_grade_id || ''));
     formGrid.appendChild(this._createFormField('wh-q23', 'DT Cấp 2,3 (m²)', 'number', d.quality_grade_23_area || ''));
     formGrid.appendChild(this._createFormField('wh-q4', 'DT Cấp 4 (m²)', 'number', d.quality_grade_4_area || ''));
     formGrid.appendChild(this._createFormField('wh-temp', 'Nhà tạm (m²)', 'number', d.temp_house_area || ''));
@@ -196,13 +197,10 @@ const warehouseModule = {
     // Set values if editing
     if (d.id) {
       this.editingId = d.id;
-      if (d.warehouse_category) document.getElementById('wh-category').value = d.warehouse_category;
-      if (d.parent_unit_id) document.getElementById('wh-parent-unit').value = d.parent_unit_id;
-      if (d.child_unit_id) document.getElementById('wh-child-unit').value = d.child_unit_id;
+      if (d.warehouse_category) document.getElementById('wh-warehouse-category').value = d.warehouse_category;
       if (d.province_id) { document.getElementById('wh-province').value = d.province_id; await this.onProvinceChange(); if (d.ward_id) document.getElementById('wh-ward').value = d.ward_id; }
-      if (d.warehouse_type_id) document.getElementById('wh-type').value = d.warehouse_type_id;
-      if (d.goods_type_id) document.getElementById('wh-goods').value = d.goods_type_id;
-      if (d.quality_grade_id) document.getElementById('wh-quality').value = d.quality_grade_id;
+      if (d.goods_type_id) { document.getElementById('wh-goods-value').value = d.goods_type_id; document.getElementById('wh-goods-input').value = catalogNameById(gtypes, d.goods_type_id); }
+      if (d.quality_grade_id) { document.getElementById('wh-quality-value').value = d.quality_grade_id; document.getElementById('wh-quality-input').value = catalogNameById(qgrades, d.quality_grade_id); }
       if (d.fire_need) document.getElementById('wh-fire-need').value = d.fire_need;
       if (d.fire_existing) document.getElementById('wh-fire-existing').value = d.fire_existing;
     } else { this.editingId = null; }
@@ -218,6 +216,8 @@ const warehouseModule = {
   hideForm() {
     clearElement(document.getElementById('warehouse-form-container'));
     this.editingId = null;
+    this.currentRecord = null;
+    this.currentUnits = [];
   },
 
   async onProvinceChange() {
@@ -244,26 +244,32 @@ const warehouseModule = {
   async save() {
     const name = document.getElementById('wh-name').value.trim();
     if (!name) { showToast('Nhập tên kho', 'warning'); return; }
+    const parentSelection = this._resolveUnitSearch('wh-parent-unit-input', 'wh-parent-unit');
+    if (!parentSelection.valid) {
+      showToast('Vui lòng chọn đơn vị cấp trên từ danh sách', 'warning');
+      return;
+    }
     const data = {
       name,
-      parent_unit_id: parseInt(document.getElementById('wh-parent-unit').value) || null,
-      child_unit_id: parseInt(document.getElementById('wh-child-unit').value) || null,
+      unit_id: this.currentRecord?.unit_id || null,
+      parent_unit_id: parentSelection.id,
+      child_unit_id: null,
       province_id: parseInt(document.getElementById('wh-province').value) || null,
       ward_id: parseInt(document.getElementById('wh-ward').value) || null,
       address: document.getElementById('wh-address').value.trim() || null,
-      warehouse_category: document.getElementById('wh-category').value || null,
+      warehouse_category: document.getElementById('wh-warehouse-category').value || null,
       quantity: parseInt(document.getElementById('wh-quantity').value) || 0,
       land_area: parseFloat(document.getElementById('wh-land-area').value) || 0,
       warehouse_area: parseFloat(document.getElementById('wh-area').value) || 0,
       warehouse_land_area: parseFloat(document.getElementById('wh-wh-land-area').value) || 0,
+      warehouse_type_id: await resolveCatalogValue('warehouse_types', 'wh-category-input', 'wh-category-value'),
       year_built: parseInt(document.getElementById('wh-year-built').value) || null,
       year_renovated: parseInt(document.getElementById('wh-year-renovated').value) || null,
-      warehouse_type_id: parseInt(document.getElementById('wh-type').value) || null,
       renovation_potential: document.getElementById('wh-renovation').value.trim() || null,
       storage_capacity: parseFloat(document.getElementById('wh-capacity').value) || 0,
       current_stock: parseFloat(document.getElementById('wh-stock').value) || 0,
-      goods_type_id: parseInt(document.getElementById('wh-goods').value) || null,
-      quality_grade_id: parseInt(document.getElementById('wh-quality').value) || null,
+      goods_type_id: await resolveCatalogValue('goods_types', 'wh-goods-input', 'wh-goods-value'),
+      quality_grade_id: await resolveCatalogValue('quality_grades', 'wh-quality-input', 'wh-quality-value'),
       quality_grade_23_area: parseFloat(document.getElementById('wh-q23').value) || 0,
       quality_grade_4_area: parseFloat(document.getElementById('wh-q4').value) || 0,
       temp_house_area: parseFloat(document.getElementById('wh-temp').value) || 0,
@@ -274,6 +280,7 @@ const warehouseModule = {
       notes: document.getElementById('wh-notes').value.trim() || null
     };
     try {
+      if (this.editingId && !(await this._confirmSaveChanges(data))) return;
       if (this.editingId) await window.api.warehouses.update(this.editingId, data);
       else await window.api.warehouses.create(data);
       showToast(this.editingId ? 'Đã cập nhật' : 'Đã thêm nhà kho', 'success');
@@ -329,11 +336,139 @@ const warehouseModule = {
     options.forEach(opt => {
       const option = document.createElement('option');
       option.value = opt.value;
-      option.textContent = opt.text;
+      option.textContent = opt.text ?? opt.label ?? '';
       select.appendChild(option);
     });
     group.append(lbl, select);
     return group;
+  },
+
+  _createUnitSearchField(units, label, inputId, valueId, value = '') {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    const lbl = document.createElement('label');
+    lbl.className = 'form-label';
+    lbl.setAttribute('for', inputId);
+    lbl.textContent = label;
+
+    const input = document.createElement('input');
+    input.className = 'form-control';
+    input.id = inputId;
+    input.setAttribute('list', `${inputId}-options`);
+    input.placeholder = '-- Chọn hoặc tìm đơn vị --';
+
+    const hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.id = valueId;
+
+    const datalist = document.createElement('datalist');
+    datalist.id = `${inputId}-options`;
+    units.forEach(unit => {
+      const option = document.createElement('option');
+      option.value = unit.name || '';
+      datalist.appendChild(option);
+    });
+
+    const selected = units.find(unit => String(unit.id) === String(value || ''));
+    if (selected) {
+      input.value = selected.name || '';
+      hidden.value = String(selected.id);
+    }
+
+    const syncValue = () => {
+      const text = input.value.trim();
+      if (!text) {
+        hidden.value = '';
+        return;
+      }
+      const matched = units.find(unit => String(unit.name || '').toLowerCase() === text.toLowerCase());
+      hidden.value = matched ? String(matched.id) : '';
+    };
+    input.addEventListener('input', syncValue);
+    input.addEventListener('change', syncValue);
+
+    group.append(lbl, input, hidden, datalist);
+    return group;
+  },
+
+  _resolveUnitSearch(inputId, valueId) {
+    const text = document.getElementById(inputId).value.trim();
+    if (!text) return { valid: true, id: null };
+    const id = parseInt(document.getElementById(valueId).value, 10);
+    return Number.isFinite(id) ? { valid: true, id } : { valid: false, id: null };
+  },
+
+  async _confirmSaveChanges(data) {
+    const changes = this._changedFields(this.currentRecord || {}, data);
+    if (!changes.length) {
+      showToast('Không có thay đổi để lưu', 'info');
+      return false;
+    }
+    const parentChange = changes.find(change => change.key === 'parent_unit_id');
+    const prefix = parentChange
+      ? `Bạn đang chuyển đơn vị cấp trên trực tiếp của kho này từ "${parentChange.from}" sang "${parentChange.to}". `
+      : '';
+    const message = `${prefix}Có ${changes.length} thay đổi sẽ được lưu. Bạn có muốn tiếp tục không?`;
+    return confirmAction(message);
+  },
+
+  _changedFields(current, data) {
+    const fields = [
+      { key: 'name', label: 'Tên kho', type: 'text' },
+      { key: 'parent_unit_id', label: 'Đơn vị cấp trên trực tiếp', type: 'unit' },
+      { key: 'province_id', label: 'Tỉnh', type: 'id' },
+      { key: 'ward_id', label: 'Xã', type: 'id' },
+      { key: 'address', label: 'Địa chỉ chi tiết', type: 'text' },
+      { key: 'warehouse_category', label: 'Loại kho', type: 'text' },
+      { key: 'warehouse_type_id', label: 'Phân loại kho', type: 'id' },
+      { key: 'quantity', label: 'Số nhà kho', type: 'number' },
+      { key: 'land_area', label: 'DT chiếm đất', type: 'number' },
+      { key: 'warehouse_area', label: 'DT nhà kho', type: 'number' },
+      { key: 'warehouse_land_area', label: 'DT kho chiếm đất', type: 'number' },
+      { key: 'year_built', label: 'Năm xây dựng', type: 'nullableNumber' },
+      { key: 'year_renovated', label: 'Năm sửa/nâng cấp', type: 'nullableNumber' },
+      { key: 'renovation_potential', label: 'Khả năng cải tạo', type: 'text' },
+      { key: 'storage_capacity', label: 'Trữ lượng dự trữ', type: 'number' },
+      { key: 'current_stock', label: 'Trữ lượng hiện tại', type: 'number' },
+      { key: 'goods_type_id', label: 'Loại hàng', type: 'id' },
+      { key: 'quality_grade_id', label: 'Xếp loại chung', type: 'id' },
+      { key: 'quality_grade_23_area', label: 'DT Cấp 2,3', type: 'number' },
+      { key: 'quality_grade_4_area', label: 'DT Cấp 4', type: 'number' },
+      { key: 'temp_house_area', label: 'Nhà tạm', type: 'number' },
+      { key: 'lightning_grade_area', label: 'Nhà cấp', type: 'number' },
+      { key: 'lightning_existing_count', label: 'Hiện có chống sét', type: 'number' },
+      { key: 'fire_need', label: 'Nhu cầu cứu hỏa', type: 'text' },
+      { key: 'fire_existing', label: 'Hiện có cứu hỏa', type: 'text' },
+      { key: 'notes', label: 'Ghi chú', type: 'text' }
+    ];
+    return fields
+      .filter(field => this._normalizeFieldValue(current[field.key], field.type) !== this._normalizeFieldValue(data[field.key], field.type))
+      .map(field => ({
+        key: field.key,
+        label: field.label,
+        from: this._displayFieldValue(current[field.key], field.type),
+        to: this._displayFieldValue(data[field.key], field.type)
+      }));
+  },
+
+  _normalizeFieldValue(value, type) {
+    if (type === 'number') return String(Number(value || 0));
+    if (type === 'nullableNumber' || type === 'id' || type === 'unit') {
+      const parsed = parseInt(value, 10);
+      return Number.isFinite(parsed) ? String(parsed) : '';
+    }
+    return String(value ?? '').trim();
+  },
+
+  _displayFieldValue(value, type) {
+    if (type === 'unit') return this._unitNameById(value) || 'Không có';
+    if (value === null || value === undefined || value === '') return 'Trống';
+    return String(value);
+  },
+
+  _unitNameById(id) {
+    const unit = (this.currentUnits || []).find(item => String(item.id) === String(id || ''));
+    return unit ? unit.name : '';
   }
 };
 

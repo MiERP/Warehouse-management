@@ -11,8 +11,15 @@ contextBridge.exposeInMainWorld('api', {
   units: {
     getAll: () => ipcRenderer.invoke('units:getAll'),
     getTree: () => ipcRenderer.invoke('units:getTree'),
+    getById: (id) => ipcRenderer.invoke('units:getById', id),
+    getChildren: (parentId) => ipcRenderer.invoke('units:getChildren', parentId),
+    getByLevel: (level) => ipcRenderer.invoke('units:getByLevel', level),
+    getAncestors: (id) => ipcRenderer.invoke('units:getAncestors', id),
+    getDescendants: (id) => ipcRenderer.invoke('units:getDescendants', id),
     create: (data) => ipcRenderer.invoke('units:create', data),
     update: (id, data) => ipcRenderer.invoke('units:update', id, data),
+    move: (id, parentId) => ipcRenderer.invoke('units:move', id, parentId),
+    findOrCreatePath: (names, warehouseLevel) => ipcRenderer.invoke('units:findOrCreatePath', names, warehouseLevel),
     delete: (id) => ipcRenderer.invoke('units:delete', id)
   },
 

@@ -3,11 +3,13 @@ const db = require('../db');
 const constructionQueries = {
   getAll() {
     return db.prepare(`
-      SELECT c.*, pu.name as parent_unit_name, cu.name as child_unit_name
+      SELECT c.*, COALESCE(u.name, cu.name) as unit_name, COALESCE(pu.name, up.name) as parent_unit_name, cu.name as child_unit_name
       FROM constructions c
+      LEFT JOIN units u ON c.unit_id = u.id
+      LEFT JOIN units up ON u.parent_id = up.id
       LEFT JOIN units pu ON c.parent_unit_id = pu.id
       LEFT JOIN units cu ON c.child_unit_id = cu.id
-      ORDER BY pu.name, c.name
+      ORDER BY COALESCE(up.name, pu.name), c.name
     `).all();
   },
 
@@ -17,16 +19,16 @@ const constructionQueries = {
 
   create(data) {
     const stmt = db.prepare(`
-      INSERT INTO constructions (name, parent_unit_id, child_unit_id, construction_type,
+      INSERT INTO constructions (name, unit_id, parent_unit_id, child_unit_id, construction_type,
         year_started, year_completed, status, budget, investor, description, progress,
         approval_decision_no, contract_number, contractor_name, contractor_address,
         contractor_tax_code, review_authority, work_volume, start_date, end_date,
         approved_investment, estimated_cost, contract_value, settlement_approved,
         total_estimated, settlement_decision_no, settlement_value, total_investment, notes)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `);
     const r = stmt.run(
-      data.name, data.parent_unit_id, data.child_unit_id, data.construction_type,
+      data.name, data.unit_id || data.child_unit_id || data.parent_unit_id || null, data.parent_unit_id, data.child_unit_id, data.construction_type,
       data.year_started, data.year_completed, data.status, data.budget,
       data.investor, data.description, data.progress,
       data.approval_decision_no, data.contract_number, data.contractor_name,
@@ -41,7 +43,7 @@ const constructionQueries = {
 
   update(id, data) {
     db.prepare(`
-      UPDATE constructions SET name=?, parent_unit_id=?, child_unit_id=?, construction_type=?,
+      UPDATE constructions SET name=?, unit_id=?, parent_unit_id=?, child_unit_id=?, construction_type=?,
         year_started=?, year_completed=?, status=?, budget=?, investor=?, description=?, progress=?,
         approval_decision_no=?, contract_number=?, contractor_name=?, contractor_address=?,
         contractor_tax_code=?, review_authority=?, work_volume=?, start_date=?, end_date=?,
@@ -49,7 +51,7 @@ const constructionQueries = {
         total_estimated=?, settlement_decision_no=?, settlement_value=?, total_investment=?, notes=?
       WHERE id=?
     `).run(
-      data.name, data.parent_unit_id, data.child_unit_id, data.construction_type,
+      data.name, data.unit_id || data.child_unit_id || data.parent_unit_id || null, data.parent_unit_id, data.child_unit_id, data.construction_type,
       data.year_started, data.year_completed, data.status, data.budget,
       data.investor, data.description, data.progress,
       data.approval_decision_no, data.contract_number, data.contractor_name,
@@ -71,8 +73,9 @@ const constructionQueries = {
   getByCurrentYear() {
     const year = new Date().getFullYear();
     return db.prepare(`
-      SELECT c.*, pu.name as parent_unit_name
+      SELECT c.*, COALESCE(u.name, pu.name) as parent_unit_name, u.name as unit_name
       FROM constructions c
+      LEFT JOIN units u ON c.unit_id = u.id
       LEFT JOIN units pu ON c.parent_unit_id = pu.id
       WHERE c.year_started = ? OR c.year_completed = ?
       ORDER BY c.name

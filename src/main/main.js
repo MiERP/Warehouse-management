@@ -22,6 +22,7 @@ const DEFAULT_PASSWORD = "123456";
 let mainWindow = null;
 let loginWindow = null;
 let currentSession = null;
+const APP_ICON = path.join(__dirname, "../../icon.png");
 
 function parseLicenseKey(key) {
   if (!key || key.length !== 8 || !/^\d{8}$/.test(key)) return null;
@@ -48,6 +49,7 @@ function createLoginWindow() {
     width: 1400, height: 900, minWidth: 1100, minHeight: 700,
     frame: true, backgroundColor: "#0F1923",
     title: "Dang nhap ? Warehouse Management",
+    icon: APP_ICON,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true, nodeIntegration: false
@@ -63,7 +65,7 @@ function createWindow(sessionInfo) {
   mainWindow = new BrowserWindow({
     width: 1400, height: 900, minWidth: 1100, minHeight: 700,
     title: "Warehouse Management",
-    icon: path.join(__dirname, "../renderer/assets/icons/icon.png"),
+    icon: APP_ICON,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true, nodeIntegration: false

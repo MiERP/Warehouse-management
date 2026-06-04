@@ -15,7 +15,7 @@ module.exports = function register() {
     return result;
   });
   ipcMain.handle("catalogs:delete", (_, tableName, id) => {
-    queries.delete(tableName, id);
+    queries.remove(tableName, id);
     writeAudit({ module: "catalogs", action: "delete", recordId: id });
     return { success: true };
   });
