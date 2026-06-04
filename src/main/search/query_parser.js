@@ -49,13 +49,17 @@ function parseYearFilters(normalizedQuery) {
 
 function parseNumericFilters(normalizedQuery) {
   const filters = [];
+  const comparator = '(?:tren|hon|lon hon|> )';
+  const lowerComparator = '(?:duoi|it hon|nho hon|< )';
   const patterns = [
-    { type: 'storage_capacity', re: /(?:suc chua|tru luong|tan)\s+(?:tren|hon|lon hon)\s+(\d+)/, op: '>' },
-    { type: 'storage_capacity', re: /(?:suc chua|tru luong|tan)\s+(?:duoi|it hon|nho hon)\s+(\d+)/, op: '<' },
-    { type: 'camera_count', re: /(?:camera|cam)\s+(?:tren|hon|lon hon)\s+(\d+)/, op: '>' },
-    { type: 'camera_count', re: /(?:camera|cam)\s+(?:duoi|it hon|nho hon)\s+(\d+)/, op: '<' },
-    { type: 'screen_count', re: /(?:man hinh)\s+(?:tren|hon|lon hon)\s+(\d+)/, op: '>' },
-    { type: 'hydrant_count', re: /(?:hong|so hong)\s+(?:tren|hon|lon hon)\s+(\d+)/, op: '>' }
+    { type: 'storage_capacity', re: new RegExp(`(?:suc chua|tru luong|tan)\\s+${comparator}\\s*(\\d+)`), op: '>' },
+    { type: 'storage_capacity', re: new RegExp(`(?:suc chua|tru luong|tan)\\s+${lowerComparator}\\s*(\\d+)`), op: '<' },
+    { type: 'camera_count', re: new RegExp(`(?:camera|cam)\\s+${comparator}\\s*(\\d+)`), op: '>' },
+    { type: 'camera_count', re: new RegExp(`(?:camera|cam)\\s+${lowerComparator}\\s*(\\d+)`), op: '<' },
+    { type: 'screen_count', re: new RegExp(`(?:man hinh)\\s+${comparator}\\s*(\\d+)`), op: '>' },
+    { type: 'screen_count', re: new RegExp(`(?:man hinh)\\s+${lowerComparator}\\s*(\\d+)`), op: '<' },
+    { type: 'hydrant_count', re: new RegExp(`(?:hong|so hong)\\s+${comparator}\\s*(\\d+)`), op: '>' },
+    { type: 'hydrant_count', re: new RegExp(`(?:hong|so hong)\\s+${lowerComparator}\\s*(\\d+)`), op: '<' }
   ];
 
   patterns.forEach(pattern => {
@@ -65,6 +69,7 @@ function parseNumericFilters(normalizedQuery) {
 
   return filters;
 }
+
 
 function parseStatusFlags(normalizedQuery) {
   return Object.fromEntries(

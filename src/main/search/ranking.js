@@ -38,7 +38,7 @@ function fieldBoost(parsed, row) {
 function statusBoost(parsed, row) {
   const text = normalizeVietnamese(`${row.status} ${row.notes} ${row.normalized_text}`);
   let score = 0;
-  if ((parsed.statusFlags.broken || parsed.statusFlags.repair) && /hong|loi|sua chua|bao tri|khong hoat dong|mat tin hieu/.test(text)) score += 20;
+  if ((parsed.statusFlags.broken || parsed.statusFlags.repair) && /hong|loi|can sua chua|can bao tri|khong hoat dong|mat tin hieu/.test(text)) score += 20;
   if (parsed.statusFlags.missing && /khong|chua co|thieu|0/.test(text)) score += 15;
   if (parsed.statusFlags.unsettled && row.module === 'construction') score += /0|chua|quyet toan/.test(text) ? 30 : 12;
   if (parsed.statusFlags.inProgress && /dang thi cong|dang thuc hien|thi cong/.test(text)) score += 15;

@@ -5,24 +5,50 @@ const ROOT = path.join(__dirname, '..');
 
 (async () => {
   const app = await electron.launch({ args: [ROOT], cwd: ROOT });
-  const page = await app.firstWindow();
+  let page = await app.firstWindow();
   const errors = [];
   page.on('pageerror', err => errors.push(err.message));
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
+  if (await page.locator('#login-btn').count()) {
+    await page.fill('#unit-name', 'Test');
+    await page.fill('#user-name', 'Tester');
+    await page.fill('#password', '123456');
+    const mainWindow = app.waitForEvent('window');
+    await page.click('#login-btn');
+    page = await mainWindow;
+    page.on('pageerror', err => errors.push(err.message));
+    page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
+  }
   await page.waitForSelector('#global-search', { timeout: 15000 });
 
   const result = { timestamp: new Date().toISOString(), checks: [] };
   function check(name, ok, detail = {}) { result.checks.push({ name, ok, detail }); if (!ok) throw new Error(`${name} failed: ${JSON.stringify(detail)}`); }
+  const seedToken = Date.now();
+  const smokeWarehouse = await page.evaluate(token => window.api.warehouses.create({
+    name: `Kho K02 Smoke ${token}`,
+    address: 'Smoke test',
+    warehouse_category: 'chien_dich',
+    year_built: 2005,
+    storage_capacity: 150,
+    notes: 'kho k02 smoke search'
+  }), seedToken);
+  const smokeCamera = await page.evaluate(token => window.api.cameras.create({
+    unit_measure: 'Hệ thống',
+    quantity: 1,
+    camera_count: 1,
+    status: `camera hong smoke ${token}`,
+    notes: 'camera hong smoke search'
+  }), seedToken);
 
   const searchRows = await page.evaluate(() => window.api.search.smart('camera hong', { limit: 5 }));
-  check('smart search returns camera results', searchRows.length > 0 && searchRows[0].module === 'camera', { top: searchRows[0] });
+  check('smart search returns camera results', searchRows.some(row => row.module === 'camera' && row.id === smokeCamera.id), { rows: searchRows.slice(0, 3), smokeCamera });
 
   await page.fill('#global-search', 'kho k02');
   await page.waitForSelector('#search-results .search-result-item', { timeout: 5000 });
   await page.locator('#search-results .search-result-item').first().click();
   await page.waitForSelector('#warehouse-form-container .card', { timeout: 5000 });
   const formName = await page.locator('#wh-name').inputValue();
-  check('search result opens record form', formName.toLowerCase().includes('kho'), { formName });
+  check('search result opens record form', formName.toLowerCase().includes('kho'), { formName, smokeWarehouse });
 
   const validationMessage = await page.evaluate(async () => {
     try {
@@ -51,6 +77,11 @@ const ROOT = path.join(__dirname, '..');
 
   const duplicates = await page.evaluate(() => window.api.duplicates.review());
   check('duplicate review API returns sections', duplicates && Array.isArray(duplicates.warehouses) && Array.isArray(duplicates.constructions), duplicates);
+
+  await page.evaluate(({ cameraId, warehouseId }) => {
+    window.api.cameras.delete(cameraId);
+    window.api.warehouses.delete(warehouseId);
+  }, { cameraId: smokeCamera.id, warehouseId: smokeWarehouse.id });
 
   const parserCheck = await page.evaluate(() => {
     const workbook = { sheetNames: ['PL2'], sheets: { PL2: [

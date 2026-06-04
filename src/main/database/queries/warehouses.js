@@ -1,10 +1,15 @@
 const db = require('../db');
+const units = require('./units');
 
 const warehouseQueries = {
   getAll() {
     return db.prepare(`
       SELECT w.*,
-        pu.name as parent_unit_name,
+        COALESCE(u.name, w.name) as unit_name,
+        u.level as unit_level,
+        u.unit_type,
+        u.path as unit_path,
+        COALESCE(pu.name, up.name) as parent_unit_name,
         cu.name as child_unit_name,
         p.name as province_name,
         wd.name as ward_name,
@@ -12,6 +17,8 @@ const warehouseQueries = {
         gt.name as goods_type_name,
         qg.name as quality_grade_name
       FROM warehouses w
+      LEFT JOIN units u ON w.unit_id = u.id
+      LEFT JOIN units up ON u.parent_id = up.id
       LEFT JOIN units pu ON w.parent_unit_id = pu.id
       LEFT JOIN units cu ON w.child_unit_id = cu.id
       LEFT JOIN provinces p ON w.province_id = p.id
@@ -24,21 +31,25 @@ const warehouseQueries = {
   },
 
   getById(id) {
-    return db.prepare('SELECT * FROM warehouses WHERE id = ?').get(id);
+    const warehouse = db.prepare('SELECT * FROM warehouses WHERE id = ?').get(id);
+    if (!warehouse || warehouse.parent_unit_id || !warehouse.unit_id) return warehouse;
+    const unit = units.getById(warehouse.unit_id);
+    return { ...warehouse, parent_unit_id: unit ? unit.parent_id : warehouse.parent_unit_id };
   },
 
   create(data) {
+    const warehouseUnit = resolveWarehouseUnit(data);
     const stmt = db.prepare(`
-      INSERT INTO warehouses (name, parent_unit_id, child_unit_id, province_id, ward_id,
+      INSERT INTO warehouses (name, unit_id, parent_unit_id, child_unit_id, province_id, ward_id,
         address, warehouse_category, quantity, land_area, warehouse_area, warehouse_land_area,
         year_built, year_renovated, warehouse_type_id, renovation_potential,
         storage_capacity, current_stock, goods_type_id, quality_grade_id,
         quality_grade_23_area, quality_grade_4_area, temp_house_area,
         lightning_grade_area, lightning_existing_count, fire_need, fire_existing, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(
-      data.name, data.parent_unit_id, data.child_unit_id, data.province_id, data.ward_id,
+      data.name, warehouseUnit.unit_id, warehouseUnit.parent_unit_id, null, data.province_id, data.ward_id,
       data.address, data.warehouse_category, data.quantity, data.land_area, data.warehouse_area,
       data.warehouse_land_area, data.year_built, data.year_renovated, data.warehouse_type_id,
       data.renovation_potential, data.storage_capacity, data.current_stock, data.goods_type_id,
@@ -46,12 +57,13 @@ const warehouseQueries = {
       data.temp_house_area, data.lightning_grade_area, data.lightning_existing_count,
       data.fire_need, data.fire_existing, data.notes
     );
-    return { id: result.lastInsertRowid, ...data };
+    return { id: result.lastInsertRowid, ...data, ...warehouseUnit };
   },
 
   update(id, data) {
+    const warehouseUnit = resolveWarehouseUnit(data);
     db.prepare(`
-      UPDATE warehouses SET name=?, parent_unit_id=?, child_unit_id=?, province_id=?, ward_id=?,
+      UPDATE warehouses SET name=?, unit_id=?, parent_unit_id=?, child_unit_id=?, province_id=?, ward_id=?,
         address=?, warehouse_category=?, quantity=?, land_area=?, warehouse_area=?,
         warehouse_land_area=?, year_built=?, year_renovated=?, warehouse_type_id=?,
         renovation_potential=?, storage_capacity=?, current_stock=?, goods_type_id=?,
@@ -59,7 +71,7 @@ const warehouseQueries = {
         lightning_grade_area=?, lightning_existing_count=?, fire_need=?, fire_existing=?, notes=?
       WHERE id=?
     `).run(
-      data.name, data.parent_unit_id, data.child_unit_id, data.province_id, data.ward_id,
+      data.name, warehouseUnit.unit_id, warehouseUnit.parent_unit_id, null, data.province_id, data.ward_id,
       data.address, data.warehouse_category, data.quantity, data.land_area, data.warehouse_area,
       data.warehouse_land_area, data.year_built, data.year_renovated, data.warehouse_type_id,
       data.renovation_potential, data.storage_capacity, data.current_stock, data.goods_type_id,
@@ -67,7 +79,7 @@ const warehouseQueries = {
       data.temp_house_area, data.lightning_grade_area, data.lightning_existing_count,
       data.fire_need, data.fire_existing, data.notes, id
     );
-    return { id, ...data };
+    return { id, ...data, ...warehouseUnit };
   },
 
   remove(id) {
@@ -78,13 +90,15 @@ const warehouseQueries = {
   search(query) {
     const q = `%${query}%`;
     return db.prepare(`
-      SELECT w.*, pu.name as parent_unit_name, cu.name as child_unit_name
+      SELECT w.*, COALESCE(u.name, w.name) as unit_name, COALESCE(pu.name, up.name) as parent_unit_name, cu.name as child_unit_name
       FROM warehouses w
+      LEFT JOIN units u ON w.unit_id = u.id
+      LEFT JOIN units up ON u.parent_id = up.id
       LEFT JOIN units pu ON w.parent_unit_id = pu.id
       LEFT JOIN units cu ON w.child_unit_id = cu.id
-      WHERE w.name LIKE ? OR pu.name LIKE ? OR cu.name LIKE ?
+      WHERE w.name LIKE ? OR u.name LIKE ? OR pu.name LIKE ? OR up.name LIKE ? OR cu.name LIKE ?
       ORDER BY w.name
-    `).all(q, q, q);
+    `).all(q, q, q, q, q);
   },
 
   // Thống kê theo category (chiến dịch / chiến thuật)
@@ -108,5 +122,31 @@ const warehouseQueries = {
     `).all();
   }
 };
+
+function resolveWarehouseUnit(data) {
+  const parentId = normalizeId(data.parent_unit_id);
+  const existingUnitId = normalizeId(data.unit_id);
+  const currentUnit = existingUnitId ? units.getById(existingUnitId) : null;
+  if (currentUnit) {
+    const updated = units.update(currentUnit.id, {
+      ...currentUnit,
+      name: data.name,
+      parent_id: parentId,
+      unit_type: 'warehouse'
+    });
+    return { unit_id: updated.id, parent_unit_id: parentId };
+  }
+  const created = units.create({
+    name: data.name,
+    parent_id: parentId,
+    unit_type: 'warehouse'
+  });
+  return { unit_id: created.id, parent_unit_id: parentId };
+}
+
+function normalizeId(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 module.exports = warehouseQueries;

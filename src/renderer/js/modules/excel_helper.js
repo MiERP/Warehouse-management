@@ -51,6 +51,7 @@ const excelHelper = {
       return rows.slice(7)
         .map((row, index) => ({ row, sourceRow: index + 8 }))
         .filter(({ row }) => row[1] && !String(row[1]).toLowerCase().includes('tổng cộng'))
+        .filter(({ row }) => row[2] || this.toNumber(row[3]) || this.toYear(row[4]) || this.toNumber(row[6]) || this.toNumber(row[7]))
         .map(({ row, sourceRow }) => ({
           sourceRow,
           data: {
@@ -205,6 +206,24 @@ const excelHelper = {
     } catch (e) { showToast('Lỗi đọc file: ' + e.message, 'error'); }
   },
 
+  async prepareImportRow(moduleName, row) {
+    const clean = { ...row };
+    if (moduleName === 'warehouses') {
+      const unitNames = ['cap_1', 'cap_2', 'cap_3', 'cap_4', 'cap_5', 'cap_6'].map(key => clean[key]).filter(Boolean);
+      if (unitNames.length) {
+        const warehouseLevel = clean.cap_6 ? 6 : 5;
+        const unit = await window.api.units.findOrCreatePath(unitNames, warehouseLevel);
+        const ancestors = await window.api.units.getAncestors(unit.id);
+        const parent = ancestors[ancestors.length - 2];
+        clean.unit_id = unit.id;
+        clean.parent_unit_id = parent ? parent.id : null;
+        clean.name = unit.name;
+      }
+      ['cap_1', 'cap_2', 'cap_3', 'cap_4', 'cap_5', 'cap_6', 'unit_type'].forEach(key => delete clean[key]);
+    }
+    return clean;
+  },
+
   async confirmImport(moduleName) {
     const rows = window._pendingImportRows;
     if (!rows) return;
@@ -212,7 +231,7 @@ const excelHelper = {
     const errors = [];
     for (const [index, row] of rows.entries()) {
       try {
-        await window.api[moduleName].create(row);
+        await window.api[moduleName].create(await this.prepareImportRow(moduleName, row));
         count++;
       } catch (e) { errors.push(`Dòng ${index + 1}: ${e.message}`); }
     }

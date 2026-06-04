@@ -1,7 +1,7 @@
-const db = require('../db');
+﻿const db = require('../db');
 
 // Allowed table names to prevent SQL injection
-const ALLOWED_TABLES = ['warehouse_types', 'goods_types', 'quality_grades', 'lightning_protection'];
+const ALLOWED_TABLES = ['warehouse_types', 'goods_types', 'quality_grades', 'lightning_protection', 'statuses', 'investors', 'unit_measures', 'construction_types'];
 
 function validateTable(tableName) {
   if (!ALLOWED_TABLES.includes(tableName)) {

@@ -1,0 +1,342 @@
+{
+  "timestamp": "2026-05-13T08:47:37.927Z",
+  "summary": {
+    "pass": 54,
+    "fail": 3,
+    "blocked": 0,
+    "errors": 1
+  },
+  "modules": {
+    "Login": [
+      {
+        "action": "Already logged in",
+        "status": "PASS",
+        "detail": "Skipped login, main window found"
+      }
+    ],
+    "Main": [
+      {
+        "action": "Sidebar render",
+        "status": "PASS",
+        "detail": "Sidebar visible"
+      }
+    ],
+    "Global": [
+      {
+        "action": "Nav Dashboard",
+        "status": "PASS",
+        "detail": "Dashboard"
+      },
+      {
+        "action": "Nav Nha kho",
+        "status": "PASS",
+        "detail": "Nhà kho"
+      },
+      {
+        "action": "Nav Cuu hoa",
+        "status": "PASS",
+        "detail": "Hệ thống cứu hỏa"
+      },
+      {
+        "action": "Nav Camera",
+        "status": "PASS",
+        "detail": "Camera an ninh"
+      },
+      {
+        "action": "Nav Cong trinh",
+        "status": "PASS",
+        "detail": "Công trình"
+      },
+      {
+        "action": "Nav Tai lieu",
+        "status": "PASS",
+        "detail": "Tài liệu"
+      },
+      {
+        "action": "Nav Cau hinh",
+        "status": "PASS",
+        "detail": "Cấu hình"
+      },
+      {
+        "action": "User info",
+        "status": "PASS",
+        "detail": "Name=QA_Tester, Unit=TEST_DEBUG_DON_VI"
+      },
+      {
+        "action": "Search",
+        "status": "PASS",
+        "detail": "Results shown"
+      },
+      {
+        "action": "Theme toggle",
+        "status": "PASS",
+        "detail": "dark -> light"
+      },
+      {
+        "action": "Header user badge",
+        "status": "PASS",
+        "detail": "User initial shown"
+      },
+      {
+        "action": "Logout",
+        "status": "FAIL",
+        "detail": "No confirm button"
+      }
+    ],
+    "Dashboard": [
+      {
+        "action": "Active on load",
+        "status": "PASS"
+      }
+    ],
+    "warehouses": [
+      {
+        "action": "Navigation",
+        "status": "PASS",
+        "detail": "Navigated to warehouses"
+      }
+    ],
+    "Warehouses": [
+      {
+        "action": "Toolbar buttons",
+        "status": "PASS",
+        "detail": "3: Thêm nhà kho, Import Excel, Export Excel"
+      },
+      {
+        "action": "Add form",
+        "status": "PASS",
+        "detail": "31 fields"
+      },
+      {
+        "action": "Fill name",
+        "status": "PASS"
+      },
+      {
+        "action": "Save",
+        "status": "PASS"
+      },
+      {
+        "action": "Table",
+        "status": "PASS",
+        "detail": "1 rows"
+      },
+      {
+        "action": "Edit (row click)",
+        "status": "FAIL",
+        "detail": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <table>…</table> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <table>…</table> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    55 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <table>…</table> intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n"
+      }
+    ],
+    "fire-systems": [
+      {
+        "action": "Navigation",
+        "status": "PASS",
+        "detail": "Navigated to fire-systems"
+      }
+    ],
+    "Fire Systems": [
+      {
+        "action": "Add form",
+        "status": "PASS",
+        "detail": "15 fields"
+      },
+      {
+        "action": "Save",
+        "status": "PASS"
+      },
+      {
+        "action": "Table",
+        "status": "PASS",
+        "detail": "1 rows"
+      },
+      {
+        "action": "Edit (row)",
+        "status": "PASS"
+      }
+    ],
+    "cameras": [
+      {
+        "action": "Navigation",
+        "status": "PASS",
+        "detail": "Navigated to cameras"
+      }
+    ],
+    "Cameras": [
+      {
+        "action": "Add form",
+        "status": "PASS",
+        "detail": "15 fields"
+      },
+      {
+        "action": "Save",
+        "status": "PASS"
+      },
+      {
+        "action": "Table",
+        "status": "PASS",
+        "detail": "1 rows"
+      },
+      {
+        "action": "Edit (row)",
+        "status": "PASS"
+      }
+    ],
+    "constructions": [
+      {
+        "action": "Navigation",
+        "status": "PASS",
+        "detail": "Navigated to constructions"
+      }
+    ],
+    "Constructions": [
+      {
+        "action": "Add modal",
+        "status": "FAIL"
+      },
+      {
+        "action": "Table",
+        "status": "PASS",
+        "detail": "1 rows"
+      }
+    ],
+    "documents": [
+      {
+        "action": "Navigation",
+        "status": "PASS",
+        "detail": "Navigated to documents"
+      }
+    ],
+    "Documents": [
+      {
+        "action": "Page",
+        "status": "PASS",
+        "detail": "2 buttons: Upload tài liệu, Tìm/Làm mới"
+      }
+    ],
+    "config": [
+      {
+        "action": "Navigation",
+        "status": "PASS",
+        "detail": "Navigated to config"
+      }
+    ],
+    "Config": [
+      {
+        "action": "Sub-tabs",
+        "status": "PASS",
+        "detail": "8 tabs found"
+      },
+      {
+        "action": "Units: render",
+        "status": "PASS"
+      },
+      {
+        "action": "Units: buttons",
+        "status": "PASS",
+        "detail": "7"
+      },
+      {
+        "action": "Units: add",
+        "status": "PASS"
+      },
+      {
+        "action": "Units: save",
+        "status": "PASS"
+      },
+      {
+        "action": "Locations: render",
+        "status": "PASS"
+      },
+      {
+        "action": "Locations: buttons",
+        "status": "PASS",
+        "detail": "3"
+      },
+      {
+        "action": "WH Types: render",
+        "status": "PASS"
+      },
+      {
+        "action": "WH Types: buttons",
+        "status": "PASS",
+        "detail": "5"
+      },
+      {
+        "action": "Goods Types: render",
+        "status": "PASS"
+      },
+      {
+        "action": "Goods Types: buttons",
+        "status": "PASS",
+        "detail": "1"
+      },
+      {
+        "action": "Quality: render",
+        "status": "PASS"
+      },
+      {
+        "action": "Quality: buttons",
+        "status": "PASS",
+        "detail": "1"
+      },
+      {
+        "action": "Lightning: render",
+        "status": "PASS"
+      },
+      {
+        "action": "Lightning: buttons",
+        "status": "PASS",
+        "detail": "1"
+      },
+      {
+        "action": "Safety: render",
+        "status": "PASS"
+      },
+      {
+        "action": "Safety: buttons",
+        "status": "PASS",
+        "detail": "3"
+      },
+      {
+        "action": "Backup: create",
+        "status": "PASS"
+      },
+      {
+        "action": "backup-history",
+        "status": "PASS",
+        "detail": "Rendered"
+      },
+      {
+        "action": "audit-log",
+        "status": "PASS",
+        "detail": "Rendered"
+      },
+      {
+        "action": "migration-history",
+        "status": "PASS",
+        "detail": "Rendered"
+      },
+      {
+        "action": "Restore button",
+        "status": "PASS",
+        "detail": "Exists (not clicked)"
+      },
+      {
+        "action": "Duplicates: render",
+        "status": "PASS"
+      },
+      {
+        "action": "Duplicates: buttons",
+        "status": "PASS",
+        "detail": "1"
+      },
+      {
+        "action": "Duplicates: review",
+        "status": "PASS",
+        "detail": "Review triggered"
+      }
+    ]
+  },
+  "errors": [
+    "[MAIN] Failed to execute 'appendChild' on 'Node': parameter 1 is not of type 'Node'."
+  ]
+}

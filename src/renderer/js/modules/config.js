@@ -1,13 +1,24 @@
 function cfgEscape(value) {
   return String(value ?? '').replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
 }
-function cfgRows(rows, columns) {
-  if (!rows || rows.length === 0) {
-    const div = document.createElement('div');
-    div.style.cssText = 'padding:12px;color:var(--text-muted)';
-    div.textContent = 'Không có dữ liệu';
-    return div;
+function cfgEmpty(message = 'Không có dữ liệu') {
+  const div = document.createElement('div');
+  div.style.cssText = 'padding:12px;color:var(--text-muted)';
+  div.textContent = message;
+  return div;
+}
+function cfgSetContent(container, content) {
+  while (container.firstChild) container.removeChild(container.firstChild);
+  if (typeof content === 'string') {
+    const template = document.createElement('template');
+    template.innerHTML = content;
+    container.appendChild(template.content);
+  } else {
+    container.appendChild(content);
   }
+}
+function cfgRows(rows, columns) {
+  if (!rows || rows.length === 0) return cfgEmpty();
   const table = document.createElement('table');
   table.style.width = '100%';
   const thead = document.createElement('thead');
@@ -35,8 +46,10 @@ function cfgRows(rows, columns) {
 }
 // === CONFIG MODULE ===
 const configModule = {
+  selectedProvinceId: null,
+
   async loadAll() {
-    await Promise.all([this.loadUnits(), this.loadProvinces(), this.loadCatalog('warehouse_types', 'warehouse-types-list'), this.loadCatalog('goods_types', 'goods-types-list'), this.loadCatalog('quality_grades', 'quality-grades-list'), this.loadCatalog('lightning_protection', 'lightning-list')]);
+    await Promise.all([this.loadUnits(), this.loadProvinces(), this.loadCatalog('warehouse_types', 'warehouse-types-list'), this.loadCatalog('goods_types', 'goods-types-list'), this.loadCatalog('quality_grades', 'quality-grades-list'), this.loadCatalog('lightning_protection', 'lightning-list'), this.loadCatalog('statuses', 'statuses-list'), this.loadCatalog('investors', 'investors-list'), this.loadCatalog('unit_measures', 'unit-measures-list'), this.loadCatalog('construction_types', 'construction-types-list')]);
   },
 
   // === UNITS (Tree) ===
@@ -160,11 +173,11 @@ const configModule = {
     });
     html += '</tbody></table>';
     const provList = document.getElementById('provinces-list');
-    while (provList.firstChild) provList.removeChild(provList.firstChild);
-    provList.appendChild(html);
+    cfgSetContent(provList, provinces.length ? html : cfgEmpty());
   },
 
   async loadWards(provinceId) {
+    this.selectedProvinceId = provinceId;
     const wards = await window.api.locations.getWardsByProvince(provinceId);
     let html = '<table style="width:100%"><thead><tr><th>Tên xã</th><th>Mã</th><th>Thao tác</th></tr></thead><tbody>';
     wards.forEach(w => {
@@ -173,8 +186,7 @@ const configModule = {
     });
     html += '</tbody></table>';
     const wardsList = document.getElementById('wards-list');
-    while (wardsList.firstChild) wardsList.removeChild(wardsList.firstChild);
-    wardsList.appendChild(html);
+    cfgSetContent(wardsList, wards.length ? html : cfgEmpty());
   },
 
   addProvince() {
@@ -196,6 +208,10 @@ const configModule = {
     const ok = await confirmAction('Xóa tỉnh này? Các xã thuộc tỉnh cũng sẽ bị xóa.');
     if (!ok) return;
     await window.api.locations.deleteProvince(id);
+    if (this.selectedProvinceId === id) {
+      this.selectedProvinceId = null;
+      cfgSetContent(document.getElementById('wards-list'), cfgEmpty());
+    }
     showToast('Đã xóa', 'success'); this.loadProvinces();
   },
 
@@ -215,6 +231,7 @@ const configModule = {
     if (!name || !province_id) { showToast('Điền đầy đủ thông tin', 'warning'); return; }
     await window.api.locations.createWard({ name, province_id: parseInt(province_id), code: document.getElementById('m-ward-code').value.trim() });
     closeModal(); showToast('Đã thêm xã', 'success');
+    await this.loadWards(parseInt(province_id, 10));
   },
 
   async deleteWard(id) {
@@ -222,6 +239,7 @@ const configModule = {
     if (!ok) return;
     await window.api.locations.deleteWard(id);
     showToast('Đã xóa', 'success');
+    if (this.selectedProvinceId) await this.loadWards(this.selectedProvinceId);
   },
 
   importLocations() { showToast('Chức năng import Excel đang phát triển (Phase 5)', 'info'); },
@@ -241,8 +259,7 @@ const configModule = {
     });
     html += '</tbody></table>';
     const container = document.getElementById(containerId);
-    while (container.firstChild) container.removeChild(container.firstChild);
-    container.appendChild(html);
+    cfgSetContent(container, items.length ? html : cfgEmpty());
     if (!container._delegated) {
       container._delegated = true;
       container.addEventListener('click', (e) => {

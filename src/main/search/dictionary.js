@@ -10,7 +10,7 @@ const MODULE_KEYWORDS = {
   warehouse: ['kho', 'nha kho', 'xang dau', 'luong thuc', 'vat tu', 'chien dich', 'chien thuat'],
   camera: ['camera', 'cam', 'giam sat', 'an ninh', 'man hinh'],
   fire: ['cuu hoa', 'pccc', 'phong chay', 'chua chay', 'nha bom', 'so hong', 'he thong cuu hoa'],
-  construction: ['cong trinh', 'du an', 'xay moi', 'xay dung', 'nang cap', 'sua chua', 'quyet toan', 'thi cong', 'hop dong', 'nha thau']
+  construction: ['cong trinh', 'du an', 'xay moi', 'xay dung', 'nang cap', 'quyet toan', 'thi cong', 'hop dong', 'nha thau']
 };
 
 const EXPANSIONS = {

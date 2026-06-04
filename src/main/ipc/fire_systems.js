@@ -21,7 +21,7 @@ module.exports = function register() {
   });
   ipcMain.handle("fireSystems:delete", (_, id) => {
     const before = queries.getById(id);
-    queries.delete(id);
+    queries.remove(id);
     writeAudit({ module: "fireSystems", action: "delete", recordId: id, before });
     return { success: true };
   });
