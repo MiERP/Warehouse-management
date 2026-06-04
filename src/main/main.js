@@ -136,6 +136,7 @@ function registerIpcHandlers() {
   require("./ipc/search")();
   require("./ipc/backup")();
   require("./ipc/documents")();
+  require("./ipc/reports")();
 }
 
 app.whenReady().then(() => {

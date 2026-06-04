@@ -46,6 +46,10 @@
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <span class="nav-label">Tài liệu</span>
         </div>
+        <div class="nav-item" data-page="reports" id="nav-reports">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V4a2 2 0 012-2h9l5 5v12.5a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+          <span class="nav-label">Báo cáo</span>
+        </div>
 
         <div class="nav-section-label">Hệ thống</div>
         <div class="nav-item" data-page="config" id="nav-config">
@@ -285,6 +289,33 @@
           </div>
         </div>
 
+        <!-- Reports Page -->
+        <div class="page" id="page-reports">
+          <div class="toolbar">
+            <button class="btn btn-primary" onclick="reportsModule.newTemplate()">Tạo mẫu báo cáo</button>
+            <button class="btn btn-secondary" onclick="reportsModule.addCategory()">Thêm loại báo cáo</button>
+            <div class="toolbar-spacer"></div>
+            <button class="btn btn-secondary" onclick="reportsModule.load()">Làm mới</button>
+          </div>
+          <div class="form-grid-2" style="gap:var(--space-lg);align-items:start">
+            <div class="card">
+              <div class="card-header"><h3 class="card-title">Mẫu báo cáo đã lưu</h3></div>
+              <div style="padding:var(--space-md);display:grid;gap:var(--space-sm)">
+                <select class="form-control" id="report-category-filter" onchange="reportsModule.loadTemplates()"></select>
+                <div id="report-template-list"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h3 class="card-title">Thiết kế mẫu báo cáo</h3></div>
+              <div id="report-builder" style="padding:var(--space-md)"></div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:var(--space-lg)">
+            <div class="card-header"><h3 class="card-title">Xem trước dữ liệu thật</h3></div>
+            <div id="report-preview" style="padding:var(--space-md);overflow:auto"></div>
+          </div>
+        </div>
+
         <!-- Config Page -->
         <div class="page" id="page-config">
           <div class="tab-bar" id="config-tabs">
@@ -410,6 +441,7 @@
   <script src="js/modules/fire_systems.js"></script>
   <script src="js/modules/constructions.js"></script>
   <script src="js/modules/documents.js"></script>
+  <script src="js/modules/reports.js"></script>
 </body>
 </html>
 

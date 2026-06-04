@@ -10,6 +10,7 @@ const PAGE_TITLES = {
   'fire-systems': 'Hệ thống Cứu hỏa tập trung',
   'cameras': 'Camera An ninh',
   'constructions': 'Công trình',
+  'reports': 'Báo cáo',
   'config': 'Cấu hình hệ thống',
   'documents': 'Quản lý Tài liệu'
 };
@@ -35,6 +36,7 @@ async function onPageLoad(pageId) {
   else if (pageId === 'cameras' && typeof cameraModule !== 'undefined') cameraModule.loadList();
   else if (pageId === 'fire-systems' && typeof fireModule !== 'undefined') fireModule.loadList();
   else if (pageId === 'constructions' && typeof constructionModule !== 'undefined') constructionModule.loadList();
+  else if (pageId === 'reports' && typeof reportsModule !== 'undefined') reportsModule.load();
   else if (pageId === 'documents' && typeof documentsModule !== 'undefined') documentsModule.loadList();
   else if (pageId === 'config' && typeof configModule !== 'undefined') configModule.loadAll();
 }

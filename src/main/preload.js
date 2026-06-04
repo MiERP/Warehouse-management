@@ -135,6 +135,20 @@ contextBridge.exposeInMainWorld('api', {
     open: (id) => ipcRenderer.invoke('documents:open', id),
     reveal: (id) => ipcRenderer.invoke('documents:reveal', id)
   },
+  reports: {
+    listCategories: () => ipcRenderer.invoke('reports:listCategories'),
+    createCategory: (data) => ipcRenderer.invoke('reports:createCategory', data),
+    updateCategory: (id, data) => ipcRenderer.invoke('reports:updateCategory', id, data),
+    deleteCategory: (id) => ipcRenderer.invoke('reports:deleteCategory', id),
+    listTemplates: (filters) => ipcRenderer.invoke('reports:listTemplates', filters),
+    getTemplate: (id) => ipcRenderer.invoke('reports:getTemplate', id),
+    createTemplate: (data) => ipcRenderer.invoke('reports:createTemplate', data),
+    updateTemplate: (id, data) => ipcRenderer.invoke('reports:updateTemplate', id, data),
+    deleteTemplate: (id) => ipcRenderer.invoke('reports:deleteTemplate', id),
+    getAvailableFields: (dataSource) => ipcRenderer.invoke('reports:getAvailableFields', dataSource),
+    renderTemplate: (id, params) => ipcRenderer.invoke('reports:renderTemplate', id, params),
+    exportTemplateToExcel: (id, params, filePath) => ipcRenderer.invoke('reports:exportTemplateToExcel', id, params, filePath)
+  },
   system: {
     migrations: () => ipcRenderer.invoke('system:migrations')
   }
@@ -149,5 +163,4 @@ contextBridge.exposeInMainWorld('sessionApi', {
 contextBridge.exposeInMainWorld('appApi', {
   logout: () => ipcRenderer.invoke('app:logout')
 });
-
 
