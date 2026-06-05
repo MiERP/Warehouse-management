@@ -7,6 +7,9 @@ const reportsModule = {
   editingId: null,
   draggedField: null,
   draggedSelectedIndex: null,
+  draggedFieldPart: null,
+  insertionHint: null,
+  resizeState: {},
   toolbarBound: false,
 
   sourceLabels: {
@@ -20,6 +23,7 @@ const reportsModule = {
     await this.refresh();
     this.bindToolbar();
     await this.newTemplate();
+    this.setupReportsLayoutResize();
   },
 
   bindToolbar() {
@@ -112,7 +116,8 @@ const reportsModule = {
     this.editingId = id;
     this.selectedFields = (template.layout_json?.fields || []).map(field => ({
       ...field,
-      field: field.field || field.name
+      field: field.field || field.name,
+      fields: Array.isArray(field.fields) ? field.fields : undefined
     })).filter(field => field.field);
     this.renderBuilder(template);
     await this.loadFields(template.data_source || 'warehouses');
@@ -141,10 +146,14 @@ const reportsModule = {
     form.appendChild(this.createInput('report-font-size', 'Cỡ chữ', layout.fontSize, 'number'));
 
     const fieldGroup = document.createElement('div');
+    fieldGroup.id = 'report-field-layout';
+    fieldGroup.className = 'report-resizable-split';
     fieldGroup.style.gridColumn = '1 / -1';
-    fieldGroup.style.cssText += ';display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px';
+    fieldGroup.style.cssText += ';display:grid;gap:16px';
 
     const palette = document.createElement('div');
+    palette.id = 'report-field-palette-panel';
+    palette.className = 'report-resizable-panel';
     palette.style.cssText = 'border:1px solid var(--border-color);border-radius:8px;padding:16px';
     const paletteTitle = document.createElement('h4');
     paletteTitle.textContent = 'Trường dữ liệu';
@@ -161,6 +170,7 @@ const reportsModule = {
     palette.appendChild(paletteList);
 
     const selected = document.createElement('div');
+    selected.id = 'report-selected-fields-panel';
     selected.style.cssText = 'border:1px solid var(--border-color);border-radius:8px;padding:16px';
     const selectedTitle = document.createElement('h4');
     selectedTitle.textContent = 'Vị trí hiển thị trong báo cáo';
@@ -185,12 +195,64 @@ const reportsModule = {
 
     container.appendChild(form);
     document.getElementById('report-source')?.addEventListener('change', event => this.changeSource(event.target.value));
+    this.setupFieldLayoutResize(fieldGroup, palette);
+    this.setupReportsLayoutResize();
     this.renderSelectedFields();
+  },
+
+  setupReportsLayoutResize() {
+    const layout = document.getElementById('reports-main-layout');
+    const savedPanel = document.getElementById('report-template-card');
+    if (!layout || !savedPanel) return;
+    this.setupResizableSplit(layout, savedPanel, 'mainLayout', { minPercent: 25, maxPercent: 72, defaultPercent: 50 });
+  },
+
+  setupFieldLayoutResize(layout, palettePanel) {
+    if (!layout || !palettePanel) return;
+    this.setupResizableSplit(layout, palettePanel, 'fieldLayout', { minPercent: 28, maxPercent: 70, defaultPercent: 45 });
+  },
+
+  setupResizableSplit(layout, leftPanel, key, options = {}) {
+    leftPanel.className = `${leftPanel.className || ''} report-resizable-panel`.trim();
+    const defaultPercent = options.defaultPercent ?? 50;
+    this.applyResizableSplit(layout, key, this.resizeState[key] ?? defaultPercent);
+    if (leftPanel._reportResizeHandle) return;
+
+    const handle = document.createElement('div');
+    handle.className = 'report-resize-handle';
+    handle.title = 'Kéo để thay đổi độ rộng khối này';
+    handle.addEventListener('mousedown', event => {
+      event.preventDefault();
+      handle.className = 'report-resize-handle is-active';
+      const onMouseMove = moveEvent => {
+        const rect = layout.getBoundingClientRect();
+        if (!rect.width) return;
+        const rawPercent = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+        const nextPercent = Math.round(Math.max(options.minPercent ?? 20, Math.min(options.maxPercent ?? 80, rawPercent)));
+        this.resizeState[key] = nextPercent;
+        this.applyResizableSplit(layout, key, nextPercent);
+      };
+      const onMouseUp = () => {
+        handle.className = 'report-resize-handle';
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+    leftPanel._reportResizeHandle = handle;
+    leftPanel.appendChild(handle);
+  },
+
+  applyResizableSplit(layout, key, percent) {
+    const firstMin = key === 'fieldLayout' ? '220px' : '260px';
+    const secondMin = key === 'fieldLayout' ? '280px' : '360px';
+    layout.style.gridTemplateColumns = `minmax(${firstMin}, ${percent}%) minmax(${secondMin}, 1fr)`;
   },
 
   async loadFields(source) {
     this.fields = await window.api.reports.getAvailableFields(source);
-    this.selectedFields = this.selectedFields.filter(field => this.fields.some(item => item.field === field.field));
+    this.selectedFields = this.selectedFields.filter(field => this.reportFieldNames(field).every(name => this.fields.some(item => item.field === name)));
     this.renderFieldPalette();
     this.renderSelectedFields();
   },
@@ -210,9 +272,12 @@ const reportsModule = {
       .forEach(field => {
         const button = createButton(`+ ${field.label}`, 'btn btn-sm btn-secondary', () => this.addField(field.field));
         button.draggable = true;
-        button.addEventListener('dragstart', () => {
+        button.addEventListener('dragstart', event => {
           this.draggedField = field.field;
           this.draggedSelectedIndex = null;
+          this.draggedFieldPart = null;
+          event.dataTransfer?.setData('text/plain', field.field);
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = 'copy';
         });
         container.appendChild(button);
       });
@@ -233,53 +298,372 @@ const reportsModule = {
     this.selectedFields.forEach((field, index) => {
       const row = document.createElement('div');
       row.draggable = true;
-      row.style.cssText = 'display:grid;grid-template-columns:32px minmax(0,1fr) 80px auto;gap:8px;align-items:center;padding:8px;border-bottom:1px solid var(--border-color)';
+      row.style.cssText = 'display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:flex-start;padding:10px 8px;border-bottom:1px solid var(--border-color)';
+      if (this.isCombinedField(field)) row.title = `Ghép: ${field.fields.map(name => this.labelForField(name)).join(field.separator || ', ')}`;
       row.addEventListener('dragstart', () => {
         this.draggedSelectedIndex = index;
         this.draggedField = null;
+        this.draggedFieldPart = null;
       });
       row.addEventListener('dragover', event => event.preventDefault());
-      row.addEventListener('drop', event => this.handleSelectedDrop(event, index));
+      row.addEventListener('drop', event => this.handleSelectedRowDrop(event, index, row));
 
       const order = document.createElement('span');
       order.textContent = `${index + 1}`;
+      order.style.paddingTop = '42px';
+
+      const editor = document.createElement('div');
+      editor.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:0';
+
+      const header = document.createElement('div');
+      header.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) 64px auto;gap:8px;align-items:center';
+
       const label = document.createElement('input');
       label.className = 'form-control';
-      label.value = field.label || field.field;
-      label.addEventListener('input', event => { this.selectedFields[index] = { ...this.selectedFields[index], label: event.target.value }; });
+      label.value = this.labelForReportField(field);
+      label.placeholder = 'Tên cột hiển thị';
+      label.style.cssText = 'width:100%';
+      label.addEventListener('input', event => { this.selectedFields[index] = { ...this.selectedFields[index], label: event.target.value, customLabel: true }; });
+
       const width = document.createElement('input');
       width.className = 'form-control';
       width.type = 'number';
       width.value = field.width || '';
       width.placeholder = '%';
+      width.title = 'Độ rộng cột (%)';
+      width.style.cssText = 'width:64px;text-align:center;padding-left:6px;padding-right:6px';
       width.addEventListener('input', event => { this.selectedFields[index] = { ...this.selectedFields[index], width: Number(event.target.value) || null }; });
+
       const actions = document.createElement('div');
-      actions.style.cssText = 'display:flex;gap:4px';
+      actions.style.cssText = 'display:flex;gap:4px;flex-wrap:nowrap;justify-content:flex-end';
       actions.appendChild(createButton('↑', 'btn btn-sm btn-secondary', () => this.moveField(index, -1)));
       actions.appendChild(createButton('↓', 'btn btn-sm btn-secondary', () => this.moveField(index, 1)));
+      if (this.isCombinedField(field)) {
+        actions.appendChild(createButton('Tách', 'btn btn-sm btn-secondary', () => this.splitCombinedField(index)));
+      }
       actions.appendChild(createButton('Xóa', 'btn btn-sm btn-danger', () => this.removeField(index)));
+      header.append(label, width, actions);
 
-      row.append(order, label, width, actions);
+      const expression = document.createElement('div');
+      expression.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-height:38px;max-width:100%;overflow-x:auto;border:1px dashed var(--border-color);border-radius:8px;padding:6px;background:rgba(15,23,42,0.18)';
+      expression.addEventListener('dragover', event => {
+        event.preventDefault();
+        const partCount = this.reportFieldNames(field).length;
+        this.setInsertionHint({ columnIndex: index, partIndex: Math.max(partCount - 1, 0), side: 'right' });
+      });
+      expression.addEventListener('drop', event => this.handleExpressionDrop(event, index));
+      this.reportFieldNames(field).forEach((fieldName, partIndex, allParts) => {
+        if (this.shouldShowInsertionCaret(index, partIndex, 'left')) expression.appendChild(this.createInsertionCaret());
+        const chip = document.createElement('span');
+        chip.textContent = this.labelForField(fieldName);
+        chip.style.cssText = 'display:inline-flex;align-items:center;min-height:28px;max-width:220px;padding:5px 10px;border:1px solid var(--accent-color);border-radius:6px;background:rgba(6,182,212,0.12);color:var(--text-primary);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 0 auto';
+        chip.title = 'Thả trường vào nửa trái hoặc phải của ô này để ghép';
+        chip.draggable = true;
+        chip.addEventListener('dragstart', event => {
+          event.stopPropagation();
+          this.draggedField = null;
+          this.draggedSelectedIndex = null;
+          this.draggedFieldPart = { columnIndex: index, partIndex };
+          event.dataTransfer?.setData('text/plain', fieldName);
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+        });
+        chip.addEventListener('dragover', event => event.preventDefault());
+        chip.addEventListener('dragenter', event => this.handleFieldPartDragOver(event, index, partIndex, chip));
+        chip.addEventListener('drop', event => this.handleFieldPartDrop(event, index, partIndex, chip));
+        expression.appendChild(chip);
+        if (this.shouldShowInsertionCaret(index, partIndex, 'right')) expression.appendChild(this.createInsertionCaret());
+
+        if (partIndex < allParts.length - 1) {
+          const separator = document.createElement('input');
+          separator.className = 'form-control';
+          separator.value = field.separator ?? ', ';
+          separator.placeholder = 'Dấu nối';
+          separator.title = 'Dấu nối giữa các trường trong cột này';
+          separator.style.cssText = 'width:76px;min-width:56px;text-align:center;padding-left:6px;padding-right:6px;flex:0 0 auto';
+          separator.addEventListener('input', event => {
+            this.selectedFields[index] = this.normalizeCombinedField({ ...this.selectedFields[index], separator: event.target.value });
+            this.renderSelectedFields();
+          });
+          expression.appendChild(separator);
+        }
+      });
+
+      editor.append(header, expression);
+      row.append(order, editor);
       container.appendChild(row);
     });
   },
 
   handleSelectedDrop(event, index) {
     event.preventDefault();
-    if (this.draggedField) this.addField(this.draggedField, index);
+    const draggedField = this.readDraggedField(event);
+    if (this.draggedFieldPart) {
+      this.detachReportFieldPartToIndex(this.draggedFieldPart.columnIndex, this.draggedFieldPart.partIndex, index);
+    } else if (draggedField) {
+      this.addField(draggedField, index);
+    }
     if (this.draggedSelectedIndex !== null) this.reorderField(this.draggedSelectedIndex, index);
+    this.clearDragState();
+  },
+
+  handleSelectedRowDrop(event, index, row) {
+    event.preventDefault();
+    const draggedField = this.readDraggedField(event);
+    if (draggedField) {
+      const rect = row.getBoundingClientRect ? row.getBoundingClientRect() : null;
+      const side = rect && event.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
+      this.insertFieldIntoReportField(index, draggedField, side);
+    } else if (this.draggedFieldPart) {
+      const rect = row.getBoundingClientRect ? row.getBoundingClientRect() : null;
+      const side = rect && event.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
+      this.moveReportFieldPartToColumn(this.draggedFieldPart.columnIndex, this.draggedFieldPart.partIndex, index, side);
+    } else if (this.draggedSelectedIndex !== null) {
+      this.reorderField(this.draggedSelectedIndex, index);
+    }
+    this.clearDragState();
+  },
+
+  handleFieldPartDragOver(event, index, partIndex, chip) {
+    event.preventDefault();
+    const rect = chip.getBoundingClientRect ? chip.getBoundingClientRect() : null;
+    const side = rect && event.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
+    this.setInsertionHint({ columnIndex: index, partIndex, side });
+  },
+
+  handleFieldPartDrop(event, index, partIndex, chip) {
+    event.preventDefault();
+    event.stopPropagation?.();
+    const rect = chip.getBoundingClientRect ? chip.getBoundingClientRect() : null;
+    const side = rect && event.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
+    const draggedField = this.readDraggedField(event);
+    if (draggedField) {
+      this.insertFieldIntoReportField(index, draggedField, side, partIndex);
+    } else if (this.draggedFieldPart) {
+      if (this.draggedFieldPart.columnIndex === index) {
+        const rawIndex = partIndex + (side === 'left' ? 0 : 1);
+        const toIndex = this.draggedFieldPart.partIndex < rawIndex ? rawIndex - 1 : rawIndex;
+        this.moveReportFieldPart(index, this.draggedFieldPart.partIndex, toIndex);
+      } else {
+        this.moveReportFieldPartToColumn(this.draggedFieldPart.columnIndex, this.draggedFieldPart.partIndex, index, side, partIndex);
+      }
+    }
+    this.clearDragState();
+  },
+
+  handleExpressionDrop(event, index) {
+    event.preventDefault();
+    event.stopPropagation?.();
+    const partCount = this.reportFieldNames(this.selectedFields[index]).length;
+    const hint = this.insertionHint?.columnIndex === index ? this.insertionHint : null;
+    const partIndex = hint?.partIndex ?? Math.max(partCount - 1, 0);
+    const side = hint?.side ?? 'right';
+    const draggedField = this.readDraggedField(event);
+    if (draggedField) {
+      this.insertFieldIntoReportField(index, draggedField, side, partIndex);
+    } else if (this.draggedFieldPart) {
+      if (this.draggedFieldPart.columnIndex === index) {
+        const rawIndex = hint ? partIndex + (side === 'left' ? 0 : 1) : partCount;
+        const toIndex = this.draggedFieldPart.partIndex < rawIndex ? rawIndex - 1 : rawIndex;
+        this.moveReportFieldPart(index, this.draggedFieldPart.partIndex, toIndex);
+      } else {
+        this.moveReportFieldPartToColumn(this.draggedFieldPart.columnIndex, this.draggedFieldPart.partIndex, index, side, partIndex);
+      }
+    }
+    this.clearDragState();
+  },
+
+  setInsertionHint(nextHint) {
+    if (
+      this.insertionHint?.columnIndex === nextHint.columnIndex &&
+      this.insertionHint.partIndex === nextHint.partIndex &&
+      this.insertionHint.side === nextHint.side
+    ) return;
+    this.insertionHint = nextHint;
+    this.renderSelectedFields();
+  },
+
+  readDraggedField(event) {
+    if (this.draggedFieldPart) return null;
+    return this.draggedField || event?.dataTransfer?.getData?.('text/plain') || null;
+  },
+
+  clearDragState() {
     this.draggedField = null;
     this.draggedSelectedIndex = null;
+    this.draggedFieldPart = null;
+    this.insertionHint = null;
+  },
+
+  createInsertionCaret() {
+    const caret = document.createElement('span');
+    caret.textContent = '|';
+    caret.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;height:30px;color:var(--accent-color);font-size:26px;font-weight:700;line-height:1;flex:0 0 auto';
+    return caret;
+  },
+
+  shouldShowInsertionCaret(columnIndex, partIndex, side) {
+    return this.insertionHint?.columnIndex === columnIndex &&
+      this.insertionHint.partIndex === partIndex &&
+      this.insertionHint.side === side;
   },
 
   addField(name, index = this.selectedFields.length) {
     const field = this.fields.find(item => item.field === name);
-    if (!field || this.selectedFields.some(item => item.field === name)) return;
+    if (!field || this.selectedFields.some(item => this.reportFieldNames(item).includes(name))) return;
     const next = { field: field.field, label: field.label, width: null };
     this.selectedFields = [
       ...this.selectedFields.slice(0, index),
       next,
       ...this.selectedFields.slice(index)
+    ];
+    this.renderSelectedFields();
+  },
+
+  insertFieldIntoReportField(index, name, side = 'right', partIndex = null) {
+    const source = this.fields.find(item => item.field === name);
+    if (!source || this.selectedFields.some(item => this.reportFieldNames(item).includes(name))) return;
+    const next = this.insertFieldNameIntoColumn(this.selectedFields, index, name, side, partIndex);
+    if (!next) return;
+    this.selectedFields = next;
+    this.renderSelectedFields();
+  },
+
+  moveReportFieldPartToColumn(sourceColumnIndex, sourcePartIndex, targetColumnIndex, side = 'right', targetPartIndex = null) {
+    if (sourceColumnIndex === targetColumnIndex) {
+      const rawIndex = targetPartIndex === null
+        ? this.reportFieldNames(this.selectedFields[targetColumnIndex]).length
+        : targetPartIndex + (side === 'left' ? 0 : 1);
+      const toIndex = sourcePartIndex < rawIndex ? rawIndex - 1 : rawIndex;
+      this.moveReportFieldPart(targetColumnIndex, sourcePartIndex, toIndex);
+      return;
+    }
+
+    const detached = this.removeReportFieldPart(this.selectedFields, sourceColumnIndex, sourcePartIndex);
+    if (!detached) return;
+    const adjustedTargetIndex = detached.columnRemoved && sourceColumnIndex < targetColumnIndex
+      ? targetColumnIndex - 1
+      : targetColumnIndex;
+    const next = this.insertFieldNameIntoColumn(detached.fields, adjustedTargetIndex, detached.name, side, targetPartIndex);
+    if (!next) return;
+    this.selectedFields = next;
+    this.renderSelectedFields();
+  },
+
+  detachReportFieldPartToIndex(sourceColumnIndex, sourcePartIndex, targetIndex) {
+    const detached = this.removeReportFieldPart(this.selectedFields, sourceColumnIndex, sourcePartIndex);
+    if (!detached) return;
+    const adjustedTargetIndex = detached.columnRemoved && sourceColumnIndex < targetIndex
+      ? targetIndex - 1
+      : targetIndex;
+    const next = [...detached.fields];
+    const insertAt = Math.max(0, Math.min(adjustedTargetIndex, next.length));
+    next.splice(insertAt, 0, this.createDetachedReportField(detached.name, detached.source));
+    this.selectedFields = next;
+    this.renderSelectedFields();
+  },
+
+  insertFieldNameIntoColumn(fieldsList, index, name, side = 'right', partIndex = null) {
+    const target = fieldsList[index];
+    if (!target) return null;
+    const separator = target.separator ?? ', ';
+    const targetFields = this.reportFieldNames(target);
+    const rawInsertAt = partIndex === null
+      ? (side === 'left' ? 0 : targetFields.length)
+      : partIndex + (side === 'left' ? 0 : 1);
+    const insertAt = Math.max(0, Math.min(rawInsertAt, targetFields.length));
+    const fields = [...targetFields.slice(0, insertAt), name, ...targetFields.slice(insertAt)];
+    const labelState = target.customLabel ? { label: target.label, customLabel: true } : {};
+    const combined = this.normalizeCombinedField({ fields, separator, width: target.width || null, ...labelState });
+    return [
+      ...fieldsList.slice(0, index),
+      combined,
+      ...fieldsList.slice(index + 1)
+    ];
+  },
+
+  removeReportFieldPart(fieldsList, columnIndex, partIndex) {
+    const source = fieldsList[columnIndex];
+    const sourceFields = this.reportFieldNames(source);
+    if (!source || partIndex < 0 || partIndex >= sourceFields.length) return null;
+    const name = sourceFields[partIndex];
+    const remainingFields = sourceFields.filter((_, index) => index !== partIndex);
+    const fields = [...fieldsList];
+    if (!remainingFields.length) {
+      fields.splice(columnIndex, 1);
+    } else {
+      fields[columnIndex] = this.normalizeReportFieldFromNames(source, remainingFields);
+    }
+    return { fields, name, source, columnRemoved: !remainingFields.length };
+  },
+
+  normalizeReportFieldFromNames(source, fields) {
+    if (fields.length === 1) {
+      return {
+        field: fields[0],
+        label: this.labelForField(fields[0]),
+        width: source.width || null
+      };
+    }
+    return this.normalizeCombinedField({ ...source, fields });
+  },
+
+  createDetachedReportField(name, source) {
+    const sourceFields = this.reportFieldNames(source);
+    const preserveSourceColumn = sourceFields.length === 1;
+    const field = {
+      field: name,
+      label: preserveSourceColumn ? this.labelForReportField(source) : this.labelForField(name),
+      width: preserveSourceColumn ? (source.width || null) : null
+    };
+    if (preserveSourceColumn && source.customLabel) field.customLabel = true;
+    return field;
+  },
+
+  moveReportFieldPart(index, fromPartIndex, toPartIndex) {
+    const target = this.selectedFields[index];
+    if (!this.isCombinedField(target)) return;
+    const fields = this.reportFieldNames(target);
+    if (fromPartIndex < 0 || fromPartIndex >= fields.length) return;
+    const next = [...fields];
+    const [moved] = next.splice(fromPartIndex, 1);
+    const normalizedIndex = Math.max(0, Math.min(toPartIndex, next.length));
+    next.splice(normalizedIndex, 0, moved);
+    this.selectedFields = [
+      ...this.selectedFields.slice(0, index),
+      this.normalizeCombinedField({ ...target, fields: next }),
+      ...this.selectedFields.slice(index + 1)
+    ];
+    this.renderSelectedFields();
+  },
+
+  combineFieldWithNext(index) {
+    const current = this.selectedFields[index];
+    const next = this.selectedFields[index + 1];
+    if (!current || !next) return;
+    const separator = current.separator ?? ', ';
+    const fields = [...this.reportFieldNames(current), ...this.reportFieldNames(next)];
+    const labelState = current.customLabel ? { label: current.label, customLabel: true } : {};
+    const combined = this.normalizeCombinedField({ fields, separator, width: current.width || null, ...labelState });
+    this.selectedFields = [
+      ...this.selectedFields.slice(0, index),
+      combined,
+      ...this.selectedFields.slice(index + 2)
+    ];
+    this.renderSelectedFields();
+  },
+
+  splitCombinedField(index) {
+    const field = this.selectedFields[index];
+    if (!this.isCombinedField(field)) return;
+    const children = field.fields.map(name => ({
+      field: name,
+      label: this.labelForField(name),
+      width: null
+    }));
+    this.selectedFields = [
+      ...this.selectedFields.slice(0, index),
+      ...children,
+      ...this.selectedFields.slice(index + 1)
     ];
     this.renderSelectedFields();
   },
@@ -334,7 +718,7 @@ const reportsModule = {
       category_id: Number(document.getElementById('report-category')?.value) || null,
       data_source: document.getElementById('report-source')?.value || 'warehouses',
       layout_json: {
-        fields: this.selectedFields,
+        fields: this.selectedFields.map(field => this.normalizeSelectedFieldForPayload(field)),
         pageSize: document.getElementById('report-page-size')?.value || 'A4',
         orientation: document.getElementById('report-orientation')?.value || 'portrait',
         marginMm: Number(document.getElementById('report-margin')?.value) || 15,
@@ -344,7 +728,46 @@ const reportsModule = {
     };
   },
 
-  async previewTemplate(templateId = this.editingId) {
+  isCombinedField(field) {
+    return field?.type === 'combined' || Array.isArray(field?.fields);
+  },
+
+  normalizeSelectedFieldForPayload(field) {
+    return this.isCombinedField(field) ? this.normalizeCombinedField(field) : field;
+  },
+
+  normalizeCombinedField(field) {
+    const fields = this.reportFieldNames(field);
+    const separator = field.separator === undefined ? ', ' : String(field.separator);
+    return {
+      ...field,
+      type: 'combined',
+      field: fields.join('_'),
+      fields,
+      separator,
+      label: field.customLabel && String(field.label || '').trim()
+        ? field.label
+        : fields.map(name => this.labelForField(name)).join(separator),
+      width: field.width || null
+    };
+  },
+
+  reportFieldNames(field) {
+    return this.isCombinedField(field) ? [...(field.fields || [])] : [field.field].filter(Boolean);
+  },
+
+  labelForField(name) {
+    return this.fields.find(field => field.field === name)?.label || name;
+  },
+
+  labelForReportField(field) {
+    if (this.isCombinedField(field)) {
+      return field.label || field.fields.map(name => this.labelForField(name)).join(field.separator ?? ', ');
+    }
+    return field.label || this.labelForField(field.field);
+  },
+
+  async previewTemplate(templateId = null) {
     const id = templateId || (await this.saveTemplate({ silent: true }))?.id;
     if (!id) return;
     const result = await window.api.reports.renderTemplate(id, {});
@@ -391,7 +814,7 @@ const reportsModule = {
     container.appendChild(tableWrap);
   },
 
-  async exportTemplate(templateId = this.editingId) {
+  async exportTemplate(templateId = null) {
     const id = templateId || (await this.saveTemplate({ silent: true }))?.id;
     if (!id) return;
     const result = await window.api.dialog.saveFile('Bao_cao.xlsx', [{ name: 'Excel', extensions: ['xlsx'] }]);

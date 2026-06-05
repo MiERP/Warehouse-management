@@ -297,15 +297,15 @@
             <div class="toolbar-spacer"></div>
             <button class="btn btn-secondary" onclick="reportsModule.load()">Làm mới</button>
           </div>
-          <div class="form-grid-2" style="gap:var(--space-lg);align-items:start">
-            <div class="card">
+          <div class="form-grid-2 report-resizable-split" id="reports-main-layout" style="gap:var(--space-lg);align-items:start">
+            <div class="card report-resizable-panel" id="report-template-card">
               <div class="card-header"><h3 class="card-title">Mẫu báo cáo đã lưu</h3></div>
               <div style="padding:var(--space-md);display:grid;gap:var(--space-sm)">
                 <select class="form-control" id="report-category-filter" onchange="reportsModule.loadTemplates()"></select>
                 <div id="report-template-list"></div>
               </div>
             </div>
-            <div class="card">
+            <div class="card" id="report-builder-card">
               <div class="card-header"><h3 class="card-title">Thiết kế mẫu báo cáo</h3></div>
               <div id="report-builder" style="padding:var(--space-md)"></div>
             </div>

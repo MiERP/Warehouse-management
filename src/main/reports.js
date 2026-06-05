@@ -131,18 +131,38 @@ function normalizeTemplateInput(data = {}) {
   const fields = Array.isArray(layout.fields) ? layout.fields : [];
   if (!fields.length) throw new Error('Mẫu báo cáo cần ít nhất một trường dữ liệu');
   const allowedFields = new Set(getAvailableFields(dataSource).map(field => field.field));
-  fields.forEach(field => {
-    if (!allowedFields.has(field.field)) throw new Error(`Trường báo cáo không hợp lệ: ${field.field}`);
-  });
+  const normalizedFields = fields.map((field, index) => normalizeReportField(field, index, allowedFields));
   return {
     category_id: data.category_id || null,
     name,
     description: cleanText(data.description),
     data_source: dataSource,
     page_config_json: data.page_config_json || layout.page || {},
-    layout_json: layout,
+    layout_json: { ...layout, fields: normalizedFields },
     filter_config_json: data.filter_config_json || {}
   };
+}
+
+function normalizeReportField(field, index, allowedFields) {
+  if (Array.isArray(field.fields) || field.type === 'combined') {
+    const childFields = (field.fields || []).map(value => String(value || '').trim()).filter(Boolean);
+    if (childFields.length < 2) throw new Error('Cột ghép cần ít nhất hai trường dữ liệu');
+    childFields.forEach(childField => {
+      if (!allowedFields.has(childField)) throw new Error(`Trường báo cáo không hợp lệ: ${childField}`);
+    });
+    const key = cleanText(field.field) || `combined_${index + 1}`;
+    return {
+      ...field,
+      type: 'combined',
+      field: key,
+      fields: childFields,
+      separator: field.separator === undefined ? ', ' : String(field.separator),
+      label: cleanText(field.label) || key
+    };
+  }
+  const fieldName = cleanText(field.field);
+  if (!allowedFields.has(fieldName)) throw new Error(`Trường báo cáo không hợp lệ: ${fieldName}`);
+  return { ...field, field: fieldName, label: cleanText(field.label) || fieldName };
 }
 
 function createTemplate(data = {}) {
@@ -202,7 +222,7 @@ function getAvailableFields(dataSource = null) {
   return modules.filter(Boolean).flatMap(mod => mod.fields.map(field => ({
     module: mod.key,
     moduleLabel: mod.label,
-    field: field.name,
+    field: reportFieldName(field.name),
     label: field.label,
     type: field.type
   })).concat((mod.listColumns || []).map(column => ({
@@ -214,6 +234,19 @@ function getAvailableFields(dataSource = null) {
   })))).filter((field, index, all) =>
     all.findIndex(item => item.module === field.module && item.field === field.field) === index
   );
+}
+
+function reportFieldName(name) {
+  const displayFields = {
+    parent_unit_id: 'parent_unit_name',
+    child_unit_id: 'child_unit_name',
+    province_id: 'province_name',
+    ward_id: 'ward_name',
+    warehouse_type_id: 'warehouse_type_name',
+    goods_type_id: 'goods_type_name',
+    quality_grade_id: 'quality_grade_name'
+  };
+  return displayFields[name] || name;
 }
 
 function applyRuntimeFilters(rows, params = {}) {
@@ -243,11 +276,23 @@ function renderTemplate(id, params = {}) {
   const fields = template.layout_json.fields || [];
   const rows = applyRuntimeFilters(DATA_SOURCES[template.data_source].getAll(), params)
     .map(row => fields.reduce((result, field) => {
-      result[field.field] = row[field.field] ?? '';
+      result[field.field] = resolveReportValue(row, field);
       return result;
     }, {}));
   const columns = fields.map(field => ({ field: field.field, label: field.label || field.field }));
   return { template, columns, rows };
+}
+
+function resolveReportValue(row, field) {
+  if (field.type === 'combined' || Array.isArray(field.fields)) {
+    const separator = field.separator === undefined ? ', ' : String(field.separator);
+    return (field.fields || [])
+      .map(childField => row[childField] ?? '')
+      .map(value => String(value).trim())
+      .filter(Boolean)
+      .join(separator);
+  }
+  return row[field.field] ?? '';
 }
 
 function exportTemplateToExcel(id, params = {}, filePath) {
