@@ -103,8 +103,17 @@ const constructionModule = {
   },
 
   async showForm(data) {
-    const [units, statusOptions] = await Promise.all([window.api.units.getAll(), this.getStatusOptions()]);
-    this.statusOptions = statusOptions;
+    const [units, statuses, investors, constructionTypes] = await Promise.all([
+    window.api.units.getAll(),
+    window.api.catalogs.getAll('statuses'),
+    window.api.catalogs.getAll('investors'),
+    window.api.catalogs.getAll('construction_types')
+  ]);
+    this.statusOptions = statuses.map(status => status.name).filter(Boolean);
+    this.units = units;
+    this.statuses = statuses;
+    this.investors = investors;
+    this.constructionTypes = constructionTypes;
     const current = data || {};
     this.editingId = current.id || null;
     const container = document.getElementById('construction-form-container');
@@ -127,13 +136,11 @@ const constructionModule = {
     grid.className = 'form-grid';
     appendSectionTitle(grid, 'Thông tin chung');
     this.textInput(grid, 'con-name', 'Nội dung (tên công trình) *', current.name || '');
-    this.selectInput(grid, 'con-type', 'Loại công trình', current.construction_type, [
-      { value: '', label: '-- Chọn --' }, 'SỬA CHỮA, NÂNG CẤP', 'LÀM MỚI', 'Xây mới', 'Cải tạo'
-    ]);
+    grid.appendChild(createCatalogCombobox(constructionTypes, 'construction_types', 'Loại công trình', 'con-type-input', 'con-type', current.construction_type || '', { valueField: 'name' }));
     this.textInput(grid, 'con-start', 'Năm bắt đầu', current.year_started || '', { type: 'number' });
     this.textInput(grid, 'con-end', 'Năm hoàn thành', current.year_completed || '', { type: 'number' });
-    this.selectInput(grid, 'con-parent', 'Đơn vị cha', current.parent_unit_id, unitOptions(units));
-    this.selectInput(grid, 'con-child', 'Đơn vị con', current.child_unit_id, unitOptions(units));
+    grid.appendChild(createUnitCombobox(units, 'Đơn vị cha', 'con-parent-input', 'con-parent', current.parent_unit_id || ''));
+    grid.appendChild(createUnitCombobox(units, 'Đơn vị con', 'con-child-input', 'con-child', current.child_unit_id || ''));
     this.textInput(grid, 'con-approval', 'Số QĐ phê duyệt', current.approval_decision_no || '');
 
     appendSectionTitle(grid, 'Thông tin hợp đồng');
@@ -147,7 +154,7 @@ const constructionModule = {
     this.textInput(grid, 'con-volume', 'Khối lượng', current.work_volume || '');
     this.textInput(grid, 'con-start-date', 'Thời gian bắt đầu', current.start_date || '', { placeholder: 'DD/MM/YYYY' });
     this.textInput(grid, 'con-end-date', 'Thời gian kết thúc', current.end_date || '', { placeholder: 'DD/MM/YYYY' });
-    this.statusInput(grid, current.status);
+    grid.appendChild(createCatalogCombobox(statuses, 'statuses', 'Trạng thái', 'con-status-input', 'con-status', current.status || '', { valueField: 'name' }));
 
     appendSectionTitle(grid, 'Giá trị đầu tư');
     this.textInput(grid, 'con-approved-inv', 'Tổng mức đầu tư phê duyệt', current.approved_investment || '', { type: 'number' });
@@ -160,7 +167,7 @@ const constructionModule = {
     this.textInput(grid, 'con-total-inv', 'Tổng đầu tư', current.total_investment || '', { type: 'number' });
 
     appendSectionTitle(grid, 'Thông tin bổ sung');
-    this.textInput(grid, 'con-investor', 'Chủ đầu tư', current.investor || '');
+    grid.appendChild(createCatalogCombobox(investors, 'investors', 'Chủ đầu tư', 'con-investor-input', 'con-investor', current.investor || '', { valueField: 'name' }));
     this.textInput(grid, 'con-desc', 'Mô tả', current.description || '', { full: true });
     this.textInput(grid, 'con-notes', 'Ghi chú', current.notes || '', { full: true });
     card.appendChild(grid);
@@ -201,12 +208,12 @@ const constructionModule = {
       name: this.value('con-name'),
       parent_unit_id: this.nullableInt('con-parent'),
       child_unit_id: this.nullableInt('con-child'),
-      construction_type: this.value('con-type') || null,
+      construction_type: await resolveCatalogValue('construction_types', 'con-type-input', 'con-type', { valueField: 'name' }),
       year_started: this.nullableInt('con-start'),
       year_completed: this.nullableInt('con-end'),
-      status: this.value('con-status') || null,
+      status: await resolveCatalogValue('statuses', 'con-status-input', 'con-status', { valueField: 'name' }),
       budget: 0,
-      investor: this.value('con-investor') || null,
+      investor: await resolveCatalogValue('investors', 'con-investor-input', 'con-investor', { valueField: 'name' }),
       description: this.value('con-desc') || null,
       progress: 0,
       approval_decision_no: this.value('con-approval') || null,

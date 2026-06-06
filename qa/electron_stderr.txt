@@ -1,0 +1,10 @@
+
+DevTools listening on ws://127.0.0.1:9222/devtools/browser/3091066e-6af8-4f9e-9d31-936c9d9aba96
+(node:19440) UnhandledPromiseRejectionWarning: SqliteError: FOREIGN KEY constraint failed
+    at D:\PROJECT\Agentic-AI\Warehouse-management\src\main\database\migrations.js:323:16
+    at sqliteTransaction (D:\PROJECT\Agentic-AI\Warehouse-management\node_modules\better-sqlite3\lib\methods\transaction.js:65:24)
+    at seedData (D:\PROJECT\Agentic-AI\Warehouse-management\src\main\database\migrations.js:361:3)
+    at runMigrations (D:\PROJECT\Agentic-AI\Warehouse-management\src\main\database\migrations.js:257:5)
+    at D:\PROJECT\Agentic-AI\Warehouse-management\src\main\main.js:142:3
+(Use `electron --trace-warnings ...` to show where the warning was created)
+(node:19440) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)

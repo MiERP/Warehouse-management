@@ -4,6 +4,7 @@ function validateWarehouse(data) {
   const normalized = {
     ...data,
     name: required(data.name, 'Tên kho', errors),
+    unit_id: nullableId(data.unit_id),
     parent_unit_id: nullableId(data.parent_unit_id),
     child_unit_id: nullableId(data.child_unit_id),
     province_id: nullableId(data.province_id),

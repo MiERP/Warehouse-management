@@ -1,4 +1,4 @@
-const db = require('./db');
+﻿const db = require('./db');
 
 function runMigrations() {
   db.exec(`
@@ -56,6 +56,38 @@ function runMigrations() {
 
     -- Hệ thống chống sét
     CREATE TABLE IF NOT EXISTS lightning_protection (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Trạng thái
+    CREATE TABLE IF NOT EXISTS statuses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Cơ quan chủ đầu tư
+    CREATE TABLE IF NOT EXISTS investors (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Đơn vị tính
+    CREATE TABLE IF NOT EXISTS unit_measures (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Loại công trình
+    CREATE TABLE IF NOT EXISTS construction_types (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
       description TEXT,
@@ -227,7 +259,9 @@ function runMigrations() {
 }
 
 function migrateExistingTables() {
+  const allowedTables = new Set(['units', 'warehouses', 'cameras', 'fire_systems', 'constructions']);
   const addColumnIfMissing = (table, column, type) => {
+    if (!allowedTables.has(table)) throw new Error(`Invalid migration table: ${table}`);
     try {
       const cols = db.prepare(`PRAGMA table_info(${table})`).all();
       if (!cols.find(c => c.name === column)) {
@@ -236,7 +270,18 @@ function migrateExistingTables() {
     } catch (e) { /* table may not exist yet */ }
   };
 
+  // Units — 6-level tree metadata
+  addColumnIfMissing('units', 'code', 'TEXT');
+  addColumnIfMissing('units', 'unit_type', "TEXT DEFAULT 'organization'");
+  addColumnIfMissing('units', 'path', 'TEXT');
+  addColumnIfMissing('units', 'sort_order', 'INTEGER DEFAULT 0');
+  addColumnIfMissing('units', 'is_active', 'INTEGER DEFAULT 1');
+  addColumnIfMissing('units', 'updated_at', 'DATETIME');
+
+  normalizeExistingUnitLevels();
+
   // Warehouses — new columns
+  addColumnIfMissing('warehouses', 'unit_id', 'INTEGER');
   addColumnIfMissing('warehouses', 'address', 'TEXT');
   addColumnIfMissing('warehouses', 'warehouse_category', 'TEXT');
   addColumnIfMissing('warehouses', 'warehouse_land_area', 'REAL DEFAULT 0');
@@ -249,14 +294,17 @@ function migrateExistingTables() {
   addColumnIfMissing('warehouses', 'notes', 'TEXT');
 
   // Cameras — new columns
+  addColumnIfMissing('cameras', 'unit_id', 'INTEGER');
   addColumnIfMissing('cameras', 'notes', 'TEXT');
 
   // Fire systems — new columns
+  addColumnIfMissing('fire_systems', 'unit_id', 'INTEGER');
   addColumnIfMissing('fire_systems', 'unit_measure', 'TEXT');
   addColumnIfMissing('fire_systems', 'pump_house_count', 'INTEGER DEFAULT 0');
   addColumnIfMissing('fire_systems', 'hydrant_count', 'INTEGER DEFAULT 0');
 
   // Constructions — new columns
+  addColumnIfMissing('constructions', 'unit_id', 'INTEGER');
   addColumnIfMissing('constructions', 'approval_decision_no', 'TEXT');
   addColumnIfMissing('constructions', 'contract_number', 'TEXT');
   addColumnIfMissing('constructions', 'contractor_name', 'TEXT');
@@ -274,6 +322,49 @@ function migrateExistingTables() {
   addColumnIfMissing('constructions', 'settlement_decision_no', 'TEXT');
   addColumnIfMissing('constructions', 'settlement_value', 'REAL DEFAULT 0');
   addColumnIfMissing('constructions', 'total_investment', 'REAL DEFAULT 0');
+
+  migrateUnitReferences();
+  rebuildUnitPaths();
+}
+
+function normalizeExistingUnitLevels() {
+  const rootWithZeroLevel = db.prepare('SELECT 1 FROM units WHERE parent_id IS NULL AND level = 0 LIMIT 1').get();
+  if (rootWithZeroLevel) db.exec('UPDATE units SET level = level + 1');
+}
+
+function migrateUnitReferences() {
+  const migrate = db.transaction(() => {
+    const createWarehouseUnit = db.prepare('INSERT INTO units (name, parent_id, level, unit_type, path, is_active) VALUES (?, ?, ?, ?, NULL, 1)');
+    const setWarehouseUnit = db.prepare('UPDATE warehouses SET unit_id = ? WHERE id = ?');
+    const warehouses = db.prepare('SELECT id, name, unit_id, child_unit_id, parent_unit_id FROM warehouses WHERE unit_id IS NULL').all();
+    warehouses.forEach(warehouse => {
+      const parentId = warehouse.child_unit_id || warehouse.parent_unit_id || null;
+      const parent = parentId ? db.prepare('SELECT level FROM units WHERE id = ?').get(parentId) : null;
+      const level = Math.min((parent ? parent.level : 4) + 1, 6);
+      const result = createWarehouseUnit.run(warehouse.name, parentId, level, 'warehouse');
+      setWarehouseUnit.run(result.lastInsertRowid, warehouse.id);
+    });
+
+    ['cameras', 'fire_systems', 'constructions'].forEach(table => {
+      db.prepare(`UPDATE ${table} SET unit_id = COALESCE(child_unit_id, parent_unit_id) WHERE unit_id IS NULL`).run();
+    });
+  });
+  migrate();
+}
+
+function rebuildUnitPaths() {
+  const updatePath = db.prepare('UPDATE units SET path = ? WHERE id = ?');
+  const units = db.prepare('SELECT id, parent_id FROM units ORDER BY level, id').all();
+  const byId = new Map(units.map(unit => [unit.id, unit]));
+  units.forEach(unit => {
+    const ids = [];
+    let current = unit;
+    while (current) {
+      ids.unshift(current.id);
+      current = byId.get(current.parent_id);
+    }
+    updatePath.run(`/${ids.join('/')}/`, unit.id);
+  });
 }
 
 function seedData() {
@@ -287,21 +378,21 @@ function seedData() {
 
   const seedTransaction = db.transaction(() => {
     // Đơn vị mẫu
-    insertUnit.run('Đơn vị cấp 1', null, 0);
-    insertUnit.run('Đơn vị cấp 2 - A', 1, 1);
-    insertUnit.run('Đơn vị cấp 2 - B', 1, 1);
-    insertUnit.run('Đơn vị cấp 3 - A1', 2, 2);
+    const rootUnitId = insertUnit.run('Đơn vị cấp 1', null, 1).lastInsertRowid;
+    const unitAId = insertUnit.run('Đơn vị cấp 2 - A', rootUnitId, 2).lastInsertRowid;
+    insertUnit.run('Đơn vị cấp 2 - B', rootUnitId, 2);
+    insertUnit.run('Đơn vị cấp 3 - A1', unitAId, 3);
 
     // Tỉnh mẫu
-    insertProvince.run('Hà Nội', 'HN');
-    insertProvince.run('Hồ Chí Minh', 'HCM');
-    insertProvince.run('Đà Nẵng', 'DN');
+    const hanoiId = insertProvince.run('Hà Nội', 'HN').lastInsertRowid;
+    const hcmId = insertProvince.run('Hồ Chí Minh', 'HCM').lastInsertRowid;
+    const danangId = insertProvince.run('Đà Nẵng', 'DN').lastInsertRowid;
 
     // Xã mẫu
-    insertWard.run('Ba Đình', 1, 'BD');
-    insertWard.run('Hoàn Kiếm', 1, 'HK');
-    insertWard.run('Quận 1', 2, 'Q1');
-    insertWard.run('Hải Châu', 3, 'HC');
+    insertWard.run('Ba Đình', hanoiId, 'BD');
+    insertWard.run('Hoàn Kiếm', hanoiId, 'HK');
+    insertWard.run('Quận 1', hcmId, 'Q1');
+    insertWard.run('Hải Châu', danangId, 'HC');
 
     // Loại nhà kho
     insertWarehouseType.run('Kho kín', 'Nhà kho có mái che, tường bao quanh');

@@ -24,7 +24,7 @@ module.exports = function register() {
   });
   ipcMain.handle("warehouses:delete", (_, id) => {
     const before = queries.getById(id);
-    queries.delete(id);
+    queries.remove(id);
     writeAudit({ module: "warehouses", action: "delete", recordId: id, before });
     log.info("Warehouse deleted", { id });
     return { success: true };

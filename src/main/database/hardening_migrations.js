@@ -137,6 +137,7 @@ const migrations = [
           notes TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          unit_id INTEGER,
           FOREIGN KEY (parent_unit_id) REFERENCES units(id) ON DELETE SET NULL,
           FOREIGN KEY (child_unit_id) REFERENCES units(id) ON DELETE SET NULL,
           FOREIGN KEY (province_id) REFERENCES provinces(id) ON DELETE SET NULL,
@@ -176,6 +177,7 @@ const migrations = [
           notes TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          unit_id INTEGER,
           FOREIGN KEY (parent_unit_id) REFERENCES units(id) ON DELETE SET NULL,
           FOREIGN KEY (child_unit_id) REFERENCES units(id) ON DELETE SET NULL
         );
@@ -213,6 +215,7 @@ const migrations = [
           notes TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          unit_id INTEGER,
           FOREIGN KEY (parent_unit_id) REFERENCES units(id) ON DELETE SET NULL,
           FOREIGN KEY (child_unit_id) REFERENCES units(id) ON DELETE SET NULL
         );
@@ -262,11 +265,53 @@ const migrations = [
           notes TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          unit_id INTEGER,
           FOREIGN KEY (parent_unit_id) REFERENCES units(id) ON DELETE SET NULL,
           FOREIGN KEY (child_unit_id) REFERENCES units(id) ON DELETE SET NULL
         );
         INSERT INTO constructions SELECT * FROM constructions_old;
         DROP TABLE constructions_old;
+      `);
+    }
+  },
+  {
+    version: 7,
+    name: '007_dynamic_reports',
+    up() {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS report_categories (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL UNIQUE,
+          description TEXT,
+          sort_order INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS report_templates (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          category_id INTEGER,
+          name TEXT NOT NULL,
+          description TEXT,
+          data_source TEXT NOT NULL,
+          page_config_json TEXT,
+          layout_json TEXT NOT NULL,
+          filter_config_json TEXT,
+          status TEXT DEFAULT 'active',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (category_id) REFERENCES report_categories(id) ON DELETE SET NULL
+        );
+        CREATE TABLE IF NOT EXISTS report_runs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          template_id INTEGER NOT NULL,
+          params_json TEXT,
+          output_type TEXT,
+          output_path TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (template_id) REFERENCES report_templates(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_report_templates_category ON report_templates(category_id);
+        CREATE INDEX IF NOT EXISTS idx_report_templates_source ON report_templates(data_source);
       `);
     }
   }

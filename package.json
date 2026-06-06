@@ -8,12 +8,17 @@
         "dev": "electron . --dev",
         "build": "electron-builder",
         "rebuild": "electron-rebuild",
-        "check": "node --check src/main/main.js && node --check src/main/preload.js && node --check src/main/search/smart_search.js && node --check src/shared/module_registry.js && node --check src/renderer/js/core/asset_crud.js && node --check src/renderer/js/app.js && node --check src/renderer/js/modules/excel_helper.js && node --check src/renderer/js/modules/cameras.js && node --check src/renderer/js/modules/fire_systems.js && node --check src/renderer/js/modules/constructions.js && node --check src/renderer/js/modules/warehouses.js && node --check tests/test_hardening_smoke.js && node --check tests/test_module_registry.js && node --check src/main/documents.js && node --check src/renderer/js/modules/documents.js && node --check src/renderer/js/core/document_panel.js && node --check tests/test_documents_service.js",
+        "check": "node --check src/main/main.js && node --check src/main/preload.js && node --check src/main/search/smart_search.js && node --check src/shared/module_registry.js && node --check src/renderer/js/core/asset_crud.js && node --check src/renderer/js/app.js && node --check src/renderer/js/modules/excel_helper.js && node --check src/renderer/js/modules/cameras.js && node --check src/renderer/js/modules/fire_systems.js && node --check src/renderer/js/modules/constructions.js && node --check src/renderer/js/modules/warehouses.js && node --check tests/test_hardening_smoke.js && node --check tests/test_module_registry.js && node --check src/main/documents.js && node --check src/renderer/js/modules/documents.js && node --check src/renderer/js/core/document_panel.js && node --check tests/test_documents_service.js && node --check src/main/reports.js && node --check src/main/ipc/reports.js && node --check src/renderer/js/modules/reports.js && node --check tests/test_reports_service.js && node --check tests/test_reports_renderer_preview.js",
         "test:search": "node tests/test_smart_search.js",
         "test:smoke": "node tests/test_hardening_smoke.js",
-        "test": "npm run check && npm run test:registry && npm run test:documents && npm run test:search && npm run test:smoke",
+        "test:units": "electron tests/test_unit_tree.js",
+        "test": "npm run check && npm run test:registry && npm run test:documents && npm run test:reports && npm run test:reports-renderer && npm run test:units && npm run test:search && npm run test:smoke",
         "test:registry": "node tests/test_module_registry.js",
-        "test:documents": "electron tests/test_documents_service.js"
+        "test:documents": "electron tests/test_documents_service.js",
+        "test:reports": "electron tests/test_reports_service.js",
+        "test:reports-renderer": "node tests/test_reports_renderer_preview.js",
+        "web:start": "electron src/web/server.js",
+        "test:web": "electron tests/test_web_server.js"
     },
     "author": "Admin",
     "license": "MIT",
@@ -35,7 +40,7 @@
         },
         "win": {
             "target": "nsis",
-            "icon": "src/renderer/assets/icons/icon.ico"
+            "icon": "icon.png"
         },
         "nsis": {
             "oneClick": false,

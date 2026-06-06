@@ -7,6 +7,7 @@ function validateConstruction(data) {
   const normalized = {
     ...data,
     name: required(data.name, 'Tên công trình', errors),
+    unit_id: nullableId(data.unit_id),
     parent_unit_id: nullableId(data.parent_unit_id),
     child_unit_id: nullableId(data.child_unit_id),
     construction_type: cleanString(data.construction_type),
